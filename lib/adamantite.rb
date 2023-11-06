@@ -134,7 +134,10 @@ class AdamantiteApp
       exit(0)
     end
 
-    @stored_passwords = get_stored_pws
+    @stored_passwords = get_stored_pws.map do |title|
+      pw_info = get_pw_file(title)
+      [title, pw_info["username"]]
+    end
     @master_password = login_request.master_password
     @master_password_salt = login_request.master_password_salt
     @add_password_request = AddPasswordRequest.new(@master_password, @master_password_salt)
@@ -145,28 +148,34 @@ class AdamantiteApp
       margined true
 
       vertical_box {
-        @stored_passwords.each_with_index do |password_title, index|
-          horizontal_box {
-            label("#{index + 1}. #{password_title}")
+        table {
+          text_column('Title')
+          text_column('Username')
 
-            button('Copy') {
-              on_clicked do
-                pw_info = get_pw_file(password_title)
-                stored_pw_selection = decrypt_pw(pw_info["iv"], pw_info['password'], @master_password, @master_password_salt)
-                IO.popen('pbcopy', 'w') { |f| f << stored_pw_selection }
-                copy_screen(password_title: password_title).show
-              end
-            }
+          cell_rows <=> [self, :stored_passwords]
+        }
+        # @stored_passwords.each_with_index do |password_title, index|
+        #   horizontal_box {
+        #     label("#{index + 1}. #{password_title}")
 
-            button('Show') {
-              on_clicked do
-                pw_info = get_pw_file(password_title)
-                stored_pw_selection = decrypt_pw(pw_info["iv"], pw_info['password'], @master_password, @master_password_salt)
-                show_screen(password: stored_pw_selection).show
-              end
-            }
-          }
-        end
+        #     button('Copy') {
+        #       on_clicked do
+        #         pw_info = get_pw_file(password_title)
+        #         stored_pw_selection = decrypt_pw(pw_info["iv"], pw_info["password"], @master_password, @master_password_salt)
+        #         IO.popen('pbcopy', 'w') { |f| f << stored_pw_selection }
+        #         copy_screen(password_title: password_title).show
+        #       end
+        #     }
+
+        #     button('Show') {
+        #       on_clicked do
+        #         pw_info = get_pw_file(password_title)
+        #         stored_pw_selection = decrypt_pw(pw_info["iv"], pw_info["password"], @master_password, @master_password_salt)
+        #         show_screen(password: stored_pw_selection).show
+        #       end
+        #     }
+        #   }
+        # end
         vertical_box {
           form {
             entry {
@@ -191,7 +200,11 @@ class AdamantiteApp
               on_clicked do
                 @add_password_request.confirm_and_add_password!
                 if @add_password_request.password_saved
-                  @stored_passwords = @stored_passwords.push(@add_password_request.website_title)
+                  @stored_passwords << [@add_password_request.website_title, @add_password_request.username]
+                  @add_password_request.website_title = ''
+                  @add_password_request.username = ''
+                  @add_passsword_request.password = ''
+                  @add_password_request.password_confirmation = ''
                 end
               end
             }
