@@ -34,6 +34,10 @@ module PWManager
 			end
 		end
 
+		def delete_pw_file(title)
+			File.delete(pw_file(title))
+		end
+
 		def get_pw_file(title)
 			JSON.load_file(pw_file(title))
 		end
