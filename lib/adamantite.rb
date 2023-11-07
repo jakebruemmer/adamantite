@@ -11,6 +11,18 @@ require "pw_utils/pw_utils"
 include PWManager::FileUtils
 include PWManager::PWUtils
 
+class PasswordInformation
+
+  attr_accessor :title
+
+  def initialize
+  end
+
+  def set_title(title)
+    @title = title
+  end
+end
+
 class LoginRequest
 
   attr_accessor :master_password, :master_password_salt, :authenticated
@@ -89,11 +101,29 @@ class ShowScreen
   }
 end
 
+class AddPasswordRequest
+
+  attr_accessor :website_title, :username, :password, :password_confirmation, :password_saved
+
+  def initialize(master_password, master_password_salt)
+    @master_password = master_password
+    @master_password_salt = master_password_salt
+    @password_saved = false
+  end
+
+  def confirm_and_add_password!
+    if @password == @password_confirmation
+      @password_saved = true
+      pw_info_for_file = make_pw_info(@username, @password, @master_password, @master_password_salt)
+      write_pw_to_file(@website_title, **pw_info_for_file)
+    end
+  end
+end
 
 class AdamantiteApp
   include Glimmer::LibUI::Application
 
-  STORED_PASSWORDS = get_stored_pws
+  attr_accessor :add_password_request, :stored_passwords
 
   before_body do
     login_request = LoginRequest.new
@@ -104,8 +134,13 @@ class AdamantiteApp
       exit(0)
     end
 
-    MASTER_PASSWORD = login_request.master_password
-    MASTER_PASSWORD_SALT = login_request.master_password_salt
+    @stored_passwords = get_stored_pws.map do |title|
+      pw_info = get_pw_file(title)
+      [title, pw_info["username"], 'Copy', 'Show']
+    end
+    @master_password = login_request.master_password
+    @master_password_salt = login_request.master_password_salt
+    @add_password_request = AddPasswordRequest.new(@master_password, @master_password_salt)
   end
 
   body {
@@ -113,28 +148,63 @@ class AdamantiteApp
       margined true
 
       vertical_box {
-        STORED_PASSWORDS.each_with_index do |password_title, index|
-          horizontal_box {
-            label("#{index + 1}. #{password_title}")
+        table {
+          text_column('Title')
+          text_column('Username')
+          button_column('Copy') {
+            on_clicked do |row|
+              password_title = @stored_passwords[row].first
+              pw_info = get_pw_file(password_title)
+              stored_pw_selection = decrypt_pw(pw_info["iv"], pw_info["password"], @master_password, @master_password_salt)
+              IO.popen('pbcopy', 'w') { |f| f << stored_pw_selection }
+              copy_screen(password_title: password_title).show
+            end
+          }
+          button_column('Show') {
+            on_clicked do |row|
+              pw_info = get_pw_file(@stored_passwords[row].first)
+              stored_pw_selection = decrypt_pw(pw_info["iv"], pw_info["password"], @master_password, @master_password_salt)
+              show_screen(password: stored_pw_selection).show
+            end
+          }
 
-            button('Copy') {
-              on_clicked do
-                pw_info = get_pw_file(password_title)
-                stored_pw_selection = decrypt_pw(pw_info["iv"], pw_info['password'], MASTER_PASSWORD, MASTER_PASSWORD_SALT)
-                IO.popen('pbcopy', 'w') { |f| f << stored_pw_selection }
-                copy_screen(password_title: password_title).show
-              end
+          cell_rows <=> [self, :stored_passwords]
+
+        }
+        vertical_box {
+          form {
+            entry {
+              label 'Website Title'
+              text <=> [@add_password_request, :website_title]
             }
-
-            button('Show') {
+            entry {
+              label 'Username'
+              text <=> [@add_password_request, :username]
+            }
+            password_entry {
+              label 'Password'
+              text <=> [@add_password_request, :password]
+            }
+            password_entry {
+              label 'Confirm Password'
+              text <=> [@add_password_request, :password_confirmation]
+            }
+          }
+          horizontal_box {
+            button('Add Password') {
               on_clicked do
-                pw_info = get_pw_file(password_title)
-                stored_pw_selection = decrypt_pw(pw_info["iv"], pw_info['password'], MASTER_PASSWORD, MASTER_PASSWORD_SALT)
-                show_screen(password: stored_pw_selection).show
+                @add_password_request.confirm_and_add_password!
+                if @add_password_request.password_saved
+                  @stored_passwords << [@add_password_request.website_title, @add_password_request.username]
+                  @add_password_request.website_title = ''
+                  @add_password_request.username = ''
+                  @add_password_request.password = ''
+                  @add_password_request.password_confirmation = ''
+                end
               end
             }
           }
-        end
+        }
       }
     }
   }
