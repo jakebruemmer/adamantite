@@ -136,7 +136,7 @@ class AdamantiteApp
 
     @stored_passwords = get_stored_pws.map do |title|
       pw_info = get_pw_file(title)
-      [title, pw_info["username"], 'Copy', 'Show']
+      [title, pw_info["username"], 'Copy', 'Show', 'Delete']
     end
     @master_password = login_request.master_password
     @master_password_salt = login_request.master_password_salt
@@ -167,6 +167,12 @@ class AdamantiteApp
               show_screen(password: stored_pw_selection).show
             end
           }
+          button_column('Delete') {
+            on_clicked do |row|
+              delete_pw_file(@stored_passwords[row].first)
+              @stored_passwords.delete_at(row)
+            end
+          }
 
           cell_rows <=> [self, :stored_passwords]
 
@@ -195,7 +201,11 @@ class AdamantiteApp
               on_clicked do
                 @add_password_request.confirm_and_add_password!
                 if @add_password_request.password_saved
-                  @stored_passwords << [@add_password_request.website_title, @add_password_request.username]
+                  new_stored_password = [@add_password_request.website_title, @add_password_request.username]
+                  new_stored_password << 'Copy'
+                  new_stored_password << 'Show'
+                  new_stored_password << 'Delete'
+                  @stored_passwords << new_stored_password
                   @add_password_request.website_title = ''
                   @add_password_request.username = ''
                   @add_password_request.password = ''
