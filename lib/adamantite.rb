@@ -7,6 +7,7 @@ require "io/console"
 
 require "file_utils/file_utils"
 require "pw_utils/pw_utils"
+require "base/adamantite"
 
 include PWManager::FileUtils
 include PWManager::PWUtils
@@ -101,14 +102,48 @@ class ShowScreen
   }
 end
 
+class UpdateMasterPasswordRequest
+
+  attr_accessor :new_master_pw, :new_master_pw_confirmation, :adamantite_object
+
+  def initialize(adamantite_object)
+    @adamantite_object = adamantite_object
+  end
+end
+
 class UpdateMasterPasswordScreen
   include Glimmer::LibUI::CustomWindow
 
+  option :update_master_password_request
+
   body {
-    window('Adamantite - Update Master Password', 400, 400) {
+    window('Adamantite - Update Master Password', 450, 150) {
       margined true
       vertical_box {
-
+        form {
+          password_entry {
+            label 'New Master Password'
+            text <=> [update_master_password_request, :new_master_pw]
+          }
+          password_entry {
+            label 'New Master Password Confirmation'
+            text <=> [update_master_password_request, :new_master_pw_confirmation]
+          }
+        }
+        button('Update') {
+          on_clicked do
+            new_master_pw = update_master_password_request.new_master_pw
+            new_master_pw_confirmation = update_master_password_request.new_master_pw_confirmation
+            success = update_master_password_request.adamantite_object.update_master_password!(new_master_pw, new_master_pw_confirmation)
+            if success
+              body_root.destroy
+              ::LibUI.quit
+            else
+              update_master_password_request.new_master_pw = ''
+              update_master_password_request.new_master_pw_confirmation = ''
+            end
+          end
+        }
       }
     }
   }
@@ -153,6 +188,8 @@ class AdamantiteApp
     end
     @master_password = login_request.master_password
     @master_password_salt = login_request.master_password_salt
+    @adamantite_object = PWManager::Adamantite.new(@master_password)
+    @adamantite_object.authenticate!
     @add_password_request = AddPasswordRequest.new(@master_password, @master_password_salt)
   end
 
@@ -228,7 +265,8 @@ class AdamantiteApp
             }
             button('Update Master Password') {
               on_clicked do
-                update_master_password_screen.show
+                update_master_password_request = UpdateMasterPasswordRequest.new(@adamantite_object)
+                update_master_password_screen(update_master_password_request: update_master_password_request).show
               end
             }
           }
