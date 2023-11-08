@@ -1,3 +1,5 @@
+require "json"
+
 module PWManager
 	module FileUtils
 		def home_dir
