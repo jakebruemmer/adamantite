@@ -20,6 +20,13 @@ The `adamantite_command_line.rb` file will run the password manager on the comma
 prompt you to set your master password the first time you run the file. After setting your master
 password, you can then run the native UI component with `lib/adamantite.rb`.
 
+You can also set up a simple desktop shortcut to run the GUI. See the section below for what the
+password manager would look like.
+
+# Example Video
+
+https://imgur.com/a/gOg61TV
+
 # Disclaimers
 
 This is a pet project. There are no guarantees at this time that it is actually a secure way to
