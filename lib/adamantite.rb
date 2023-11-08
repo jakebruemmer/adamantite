@@ -32,7 +32,7 @@ class LoginRequest
     user_master_pw_info = get_master_pw_info
     master_pw_hash = user_master_pw_info['password']
     master_pw_salt = user_master_pw_info['salt']
-    master_pw_comparator = BCrypt::Password.new(master_pw_hash)
+    master_pw_comparator = generate_master_pw_comparator(master_pw_hash)
 
     if master_pw_comparator == master_password + master_pw_salt
       @authenticated = true
@@ -149,6 +149,57 @@ class UpdateMasterPasswordScreen
   }
 end
 
+class SetMasterPasswordRequest
+
+  attr_accessor :new_master_pw, :new_master_pw_confirmation, :success
+
+  def set_master_password!
+    @success = false
+    if @new_master_pw == @new_master_pw_confirmation
+      master_pw_info = generate_master_pw_hash(@new_master_pw)
+      write_pw_to_file('master', password: master_pw_info[:master_pw_hash], salt: master_pw_info[:salt])
+      @success = true
+    end
+    @success
+  end
+end
+
+class SetMasterPasswordScreen
+  include Glimmer::LibUI::CustomWindow
+
+  option :set_master_password_request
+
+  body {
+    window('Adamantite - Create Master Password', 450, 150) {
+      margined true
+      vertical_box {
+        form {
+          password_entry {
+            label 'Master Password'
+            text <=> [set_master_password_request, :new_master_pw]
+          }
+          password_entry {
+            label 'Master Password Confirmation'
+            text <=> [set_master_password_request, :new_master_pw_confirmation]
+          }
+        }
+        button('Set Master Password') {
+          on_clicked do
+            set_master_password_request.set_master_password!
+            if set_master_password_request.success
+              body_root.destroy
+              ::LibUI.quit
+            else
+              set_master_password_request.new_master_pw = ''
+              set_master_password_request.new_master_pw_confirmation = ''
+            end
+          end
+        }
+      }
+    }
+  }
+end
+
 class AddPasswordRequest
 
   attr_accessor :website_title, :username, :password, :password_confirmation, :password_saved
@@ -174,8 +225,12 @@ class AdamantiteApp
   attr_accessor :add_password_request, :stored_passwords
 
   before_body do
-    login_request = LoginRequest.new
+    if !pw_file_exists?('master')
+      set_master_password_request = SetMasterPasswordRequest.new
+      set_master_password_screen(set_master_password_request: set_master_password_request).show
+    end
 
+    login_request = LoginRequest.new
     login_screen(login_request: login_request).show
 
     if !login_request.authenticated

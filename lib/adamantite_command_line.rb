@@ -89,7 +89,7 @@ else
 
   master_pw_info = generate_master_pw_hash(master_pw)
 
-  write_pw_to_file('master', password: master_pw_info['master_pw_hash'], salt: master_pw_info['salt'])
+  write_pw_to_file('master', password: master_pw_info[:master_pw_hash], salt: master_pw_info[:salt])
 
   puts "Wrote master pw to file."
 end
