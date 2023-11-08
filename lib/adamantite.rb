@@ -101,6 +101,19 @@ class ShowScreen
   }
 end
 
+class UpdateMasterPasswordScreen
+  include Glimmer::LibUI::CustomWindow
+
+  body {
+    window('Adamantite - Update Master Password', 400, 400) {
+      margined true
+      vertical_box {
+
+      }
+    }
+  }
+end
+
 class AddPasswordRequest
 
   attr_accessor :website_title, :username, :password, :password_confirmation, :password_saved
@@ -211,6 +224,11 @@ class AdamantiteApp
                   @add_password_request.password = ''
                   @add_password_request.password_confirmation = ''
                 end
+              end
+            }
+            button('Update Master Password') {
+              on_clicked do
+                update_master_password_screen.show
               end
             }
           }
