@@ -48,7 +48,7 @@ class LoginScreen
   option :login_request
 
   body {
-    window('Adamantite') {
+    window('Adamantite', 400, 100) {
       margined true
 
       vertical_box {
@@ -80,7 +80,7 @@ class CopyScreen
   option :password_title
 
   body {
-    window('Copy') {
+    window('Copy', 400, 100) {
       margined true
       label("Copied password for #{password_title} to your clipboard.")
     }
@@ -93,7 +93,7 @@ class ShowScreen
   option :password
 
   body {
-    window('Show') {
+    window('Show', 400, 100) {
       margined true
 
       label("#{password}")
@@ -144,7 +144,7 @@ class AdamantiteApp
   end
 
   body {
-    window('Adamantite') {
+    window('Adamantite', 600, 400) {
       margined true
 
       vertical_box {
