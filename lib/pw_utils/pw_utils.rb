@@ -1,3 +1,7 @@
+require "bcrypt"
+require "openssl"
+require "base64"
+
 module PWManager
   module PWUtils
 
@@ -21,6 +25,16 @@ module PWManager
       decrypt_cipher.key = Digest::MD5.hexdigest(master_pw + master_pw_salt)
       decrypt_text = Base64.decode64(pw_hash.encode('ascii-8bit'))
       decrypt_cipher.update(decrypt_text) + decrypt_cipher.final
+    end
+
+    def generate_master_pw_hash(master_pw)
+      salt = BCrypt::Engine.generate_salt
+      master_pw_hash = BCrypt::Password.create(master_pw + salt)
+      {'salt': salt, 'master_pw_hash': master_pw_hash}
+    end
+
+    def generate_master_pw_comparator(master_pw_hash)
+      BCrypt::Password.new(master_pw_hash)
     end
   end
 end
