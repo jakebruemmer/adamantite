@@ -7,8 +7,8 @@ require "io/console"
 require "file_utils/file_utils"
 require "pw_utils/pw_utils"
 
-include PWManager::FileUtils
-include PWManager::PWUtils
+include Adamantite::FileUtils
+include Adamantite::PWUtils
 
 puts "Welcome to Adamantite."
 

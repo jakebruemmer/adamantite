@@ -2,7 +2,7 @@ require "bcrypt"
 require "openssl"
 require "base64"
 
-module PWManager
+module Adamantite
   module PWUtils
 
     def make_pw_info(username, pw, master_pw, master_pw_salt)

@@ -1,6 +1,6 @@
 require "json"
 
-module PWManager
+module Adamantite
 	module FileUtils
 		def home_dir
 			ENV['HOME']
