@@ -1,4 +1,4 @@
-- [ ] Master password creation on native UI app
+- [X] Master password creation on native UI app
 - [X] Ability to change master password
 - [X] Add input boxes for adding more passwords
 - [X] Button for deleting a password
@@ -8,3 +8,4 @@
 - [ ] Package library as standalone download (brew?)
 - [ ] Rubocop
 - [ ] Security audit/score
+- [ ] Prevent creation of duplicate stored passwords
