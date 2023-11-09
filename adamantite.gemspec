@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = "adamantite"
-  s.version     = "0.0.1"
+  s.version     = "0.0.2"
   s.summary     = "Yet another password manager."
   s.description = "A local password manager written in Ruby."
   s.authors     = ["Jake Bruemmer"]
