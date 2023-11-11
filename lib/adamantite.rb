@@ -17,6 +17,7 @@ require "gui/request/login_request"
 require "gui/request/add_password_request"
 require "gui/request/update_master_password_request"
 require "gui/request/set_master_password_request"
+require "gui/form/password_object_form_window"
 
 include Adamantite::FileUtils
 include Adamantite::PWUtils
@@ -126,11 +127,23 @@ class AdamantiteApp
                 update_master_password_screen(update_master_password_request: update_master_password_request).show
               end
             }
+            button('Add Password (New Window)') {
+              on_clicked do
+                on_save = lambda { |password_object|
+                  stored_password = []
+                  stored_password << password_object.website_title
+                  stored_password << password_object.username
+                  stored_password << 'Copy'
+                  stored_password << 'Show'
+                  stored_password << 'Delete'
+                  @stored_passwords << stored_password
+                }
+                password_object_form_window(master_pw: @master_password, master_pw_salt: @master_password_salt, on_save: on_save).show
+              end
+            }
           }
         }
       }
     }
   }
 end
-
-AdamantiteApp.launch
