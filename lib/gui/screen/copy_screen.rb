@@ -7,7 +7,7 @@ module Adamantite
         option :password_title
 
         body {
-          window('Copy', 400, 100) {
+          window('Adamantite - Copy Password', 400, 100) {
             margined true
             label("Copied password for #{password_title} to your clipboard.")
           }

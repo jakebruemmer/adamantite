@@ -7,7 +7,7 @@ module Adamantite
         option :password
 
         body {
-          window('Show', 400, 100) {
+          window('Adamantite - Show Password', 400, 100) {
             margined true
 
             label("#{password}")
