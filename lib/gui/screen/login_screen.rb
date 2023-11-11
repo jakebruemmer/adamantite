@@ -8,7 +8,7 @@ module PWManager
         option :login_request
 
         body {
-          window('Adamantite', 400, 100) {
+          window('Adamantite - Login', 400, 100) {
             margined true
 
             vertical_box {
