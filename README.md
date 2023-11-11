@@ -9,23 +9,13 @@ can't see the source code.
 
 # Usage
 
-After installing the required gems, first run the `lib/adamantite_command_line.rb` file to
-set your master password. Include the `lib/` directory when you run the file like so:
-
 ```
-ruby -I path/to/lib/ path/to/lib/adamantite_command_line.rb
+gem install adamantite
 ```
+The gem page for this project can be found here: https://rubygems.org/gems/adamantite
 
-The `adamantite_command_line.rb` file will run the password manager on the command line and will
-prompt you to set your master password the first time you run the file. After setting your master
-password, you can then run the native UI component with `lib/adamantite.rb`.
-
-You can also set up a simple desktop shortcut to run the GUI. See the section below for what the
-password manager would look like.
-
-# Example Video
-
-https://imgur.com/a/gOg61TV
+The binary that's installed with the gem will run the GUI. In order to run the command line app,
+you'll need to navigate to where the gem is installed on your machine and run that directly.
 
 # Disclaimers
 
