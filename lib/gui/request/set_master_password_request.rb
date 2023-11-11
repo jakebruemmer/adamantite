@@ -1,3 +1,5 @@
+require "base/adamantite"
+
 module Adamantite
   module GUI
     module Request
@@ -7,12 +9,8 @@ module Adamantite
 
         def set_master_password!
           @success = false
-          if @new_master_pw == @new_master_pw_confirmation
-            master_pw_info = generate_master_pw_hash(@new_master_pw)
-            write_pw_to_file('master', password: master_pw_info[:master_pw_hash], salt: master_pw_info[:salt])
-            @success = true
-          end
-          @success
+          adamantite = Base::Adamantite.new(@new_master_pw)
+          @success = adamantite.serialize_master_password(@new_master_pw, @new_master_pw_confirmation)
         end
       end
     end

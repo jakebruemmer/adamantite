@@ -1,9 +1,13 @@
 require "bcrypt"
 require "openssl"
 require "base64"
+require "rbnacl"
+
+require "file_utils/file_utils"
 
 module Adamantite
   module PWUtils
+    include Adamantite::FileUtils
 
     def make_pw_info(username, pw, master_pw, master_pw_salt)
       cipher = OpenSSL::Cipher::AES256.new(:CBC)
@@ -27,14 +31,24 @@ module Adamantite
       decrypt_cipher.update(decrypt_text) + decrypt_cipher.final
     end
 
-    def generate_master_pw_hash(master_pw)
-      salt = BCrypt::Engine.generate_salt
-      master_pw_hash = BCrypt::Password.create(master_pw + salt)
-      {'salt': salt, 'master_pw_hash': master_pw_hash}
+    def generate_master_pw_hash(master_password)
+      salt = RbNaCl::Random.random_bytes(RbNaCl::PasswordHash::SCrypt::SALTBYTES)
+      opslimit = 2**20
+      memlimit = 2**24
+      digest_size = 64
+      output_key_material = RbNaCl::PasswordHash.scrypt(master_password, salt, opslimit, memlimit, digest_size)
+      master_password_hash = Base64.encode64(output_key_material).encode('utf-8')
+      salt_utf8 = Base64.encode64(salt).encode('utf-8')
+      {'salt': salt, 'master_pw_hash': master_password_hash}
     end
 
-    def generate_master_pw_comparator(master_pw_hash)
-      BCrypt::Password.new(master_pw_hash)
+    def generate_master_pw_comparator(master_password_entry)
+      master_password_info = get_master_pw_info
+      opslimit = 2**20
+      memlimit = 2**24
+      digest_size = 64
+      output_key_material = RbNaCl::PasswordHash.scrypt(master_password_entry[:salt], salt, opslimit, memlimit, digest_size)
+      Base64.encode64(output_key_material).encode('utf-8')
     end
   end
 end

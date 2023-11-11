@@ -1,4 +1,4 @@
 #!/usr/bin/env ruby
 require "adamantite"
 
-AdamantiteApp.launch
+Adamantite::AdamantiteApp.launch

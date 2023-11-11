@@ -36,6 +36,18 @@ module Adamantite
 			end
 		end
 
+		def write_to_file(title, file_contents, binary)
+			if binary
+				File.open(pw_file(title), "wb") do |f|
+					f.write(file_contents)
+				end
+			else
+				File.open(pw_file(title), "w") do |f|
+					f.write(file_contents)
+				end
+			end
+		end
+
 		def delete_pw_file(title)
 			File.delete(pw_file(title))
 		end
@@ -44,12 +56,28 @@ module Adamantite
 			JSON.load_file(pw_file(title))
 		end
 
-		def get_master_pw_info
+		def get_master_password_info
 			get_pw_file('master')
+		end
+
+		def get_master_password_hash
+			File.open(pw_file("master_password_hash"), "rb") do |f|
+				f.read
+			end
+		end
+
+		def get_master_password_salt
+			File.open(pw_file("master_password_salt"), "rb") do |f|
+				f.read
+			end
 		end
 
 		def get_stored_pws
 			Dir.entries(pwmanager_dir).filter { |f| ![".", "..", "master"].include?(f) }
+		end
+
+		def master_password_exists?
+			pw_file_exists?("master_password_hash") && pw_file_exists?("master_password_salt")
 		end
 	end
 end
