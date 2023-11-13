@@ -99,7 +99,7 @@ module Adamantite
 		end
 
 		def get_stored_pws
-			excluded_filenames = [".", "..", "master_password_hash", "master_password_salt"]
+			excluded_filenames = [".", "..", "master_password_hash", "master_password_salt", "master_vault_key"]
 			Dir.entries(pwmanager_dir).filter { |f| !excluded_filenames.include?(f) }
 		end
 

@@ -1,5 +1,6 @@
 require "file_utils/file_utils"
 require "rbnacl"
+require "base64"
 
 include Adamantite::FileUtils
 
@@ -29,7 +30,7 @@ module Adamantite
             @master_password_hash = master_password_hash
             @master_password_salt = master_password_salt
             @master_vault_key = get_master_vault_key
-            derived_key = RbNaCl::PasswordHash.scrypt(@master_password, @master_password_salt, OPSLIMIT, MEMLIMIT, DIGEST_SIZE)
+            derived_key = rbnacl_scrypt_hash(master_password, master_password_salt)
             @vault = RbNaCl::SimpleBox.from_secret_key(derived_key)
             @stored_passwords = get_stored_pws
             true
@@ -43,10 +44,11 @@ module Adamantite
 
       def save_password(website_title, username, password, password_confirmation)
         if password == password_confirmation && authenticated?
-          make_password_dir(website_title)
-          write_to_file(password_file(website_title, "website_title"), @vault.encrypt(website_title), true)
-          write_to_file(password_file(website_title, "username"), @vault.encrypt(username), true)
-          write_to_file(password_file(website_title, "password"), @vault.encrypt(password), true)
+          encrypted_file_name_ascii_8bit = @vault.encrypt(website_title)
+          dir_name = Base64.urlsafe_encode64(encrypted_file_name_ascii_8bit)
+          make_password_dir(dir_name)
+          write_to_file(password_file(dir_name, "username"), @vault.encrypt(username), true)
+          write_to_file(password_file(dir_name, "password"), @vault.encrypt(password), true)
         end
       end
 
@@ -58,12 +60,10 @@ module Adamantite
 
       def serialize_master_password(master_password, master_password_confirmation)
         if master_password == master_password_confirmation
-          master_password_salt = RbNaCl::Random.random_bytes(RbNaCl::PasswordHash::SCrypt::SALTBYTES)
-          master_password_hash = RbNaCl::PasswordHash.scrypt(master_password, master_password_salt, OPSLIMIT, MEMLIMIT, DIGEST_SIZE)
-          vault_key = RbNaCl::Random.random_bytes(RbNaCl::PasswordHash::SCrypt::SALTBYTES)
-          derived_key = RbNaCl::PasswordHash.scrypt(master_password, master_password_salt, OPSLIMIT, MEMLIMIT, DIGEST_SIZE)
-
-          # Use the derived key to encrypt the vault key
+          master_password_salt = rbnacl_random_bytes
+          master_password_hash = rbnacl_scrypt_hash(master_password, master_password_salt)
+          vault_key = rbnacl_random_bytes
+          derived_key = rbnacl_scrypt_hash(master_password, master_password_salt)
           vault = RbNaCl::SimpleBox.from_secret_key(derived_key)
           encrypted_vault_key = vault.encrypt(vault_key)
           write_to_file(password_file("master_password_hash"), master_password_hash, true)
@@ -75,30 +75,47 @@ module Adamantite
         end
       end
 
-      def update_master_password!(new_master_pw, new_master_pw_confirmation)
-        return false unless new_master_pw == new_master_pw_confirmation && @authenticated
+      def update_master_password!(new_master_password, new_master_password_confirmation)
+        if new_master_password == new_master_password_confirmation && authenticated?
+          master_password_salt = rbnacl_random_bytes
+          master_password_hash = generate_master_password_hash(new_master_password, master_password_salt)
+          vault_key = rbnacl_random_bytes
+          derived_key = rbnacl_scrypt_hash(master_password, master_password_salt)
+          vault = RbNaCl::SimpleBox.from_secret_key(derived_key)
+          encrypted_vault_key = vault.encrypt(vault_key)
 
-        new_master_pw_info = generate_master_pw_hash(new_master_pw)
-        new_master_pw_hash = new_master_pw_info[:master_pw_hash]
-        new_master_pw_salt = new_master_pw_info[:salt]
+          new_password_data = @stored_passwords.map do |stored_password|
+            info = {}
+            website_title = vault.encrypt(decode_encrypted_utf8_string(stored_password))
+            encrypted_file_name_ascii_8bit = @vault.encrypt(website_title)
+            dir_name = Base64.urlsafe_encode64(encrypted_file_name_ascii_8bit)
+            info["dir_name"] = dir_name
+            info["username"] = vault.encrypt(@vault.decrypt(read_file(password_file(stored_password, "username"), true)))
+            info["password"] = vault.encrypt(@vault.decrypt(read_file(password_file(stored_password, "password"), true)))
+          end
 
-        @stored_passwords.each do |stored_password|
-          pw_info = get_pw_file(stored_password)
-          pw = decrypt_pw(pw_info['iv'], pw_info['password'], @master_pw, @master_pw_salt)
-          pw_info_for_file = make_pw_info(pw_info['username'], pw, new_master_pw, new_master_pw_salt)
-          write_pw_to_file(stored_password, **pw_info_for_file)
+          new_password_data.each do |new_password|
+            make_password_dir(new_password["dir_name"])
+            write_to_file(password_file(new_password["dir_name"], "username"), new_password["username"], true)
+            write_to_file(password_file(new_password["dir_name"], "password"), new_password["password"], true)
+          end
+
+          write_to_file(password_file("master_password_hash"), master_password_hash, true)
+          write_to_file(password_file("master_password_salt"), master_password_salt, true)
+          write_to_file(password_file("master_vault_key"), encrypted_vault_key, true)
+          @master_password_hash = master_password_hash
+          @master_password_salt = master_password_salt
+          @master_vault_key = get_master_vault_key
+          @vault = vault
+          true
+        else
+          false
         end
-
-        write_pw_to_file('master', password: new_master_pw_hash, salt: new_master_pw_salt)
-        @master_pw_hash = get_master_pw_info
-        @master_pw = new_master_pw
-        @master_pw_salt = new_master_pw_salt
-        true
       end
 
       def generate_master_password_hash(master_password, stored_salt = nil)
-        salt = stored_salt.nil? ? RbNaCl::Random.random_bytes(RbNaCl::PasswordHash::SCrypt::SALTBYTES) : stored_salt
-        RbNaCl::PasswordHash.scrypt(master_password, salt, OPSLIMIT, MEMLIMIT, DIGEST_SIZE)
+        salt = stored_salt.nil? ? rbnacl_random_bytes : stored_salt
+        rbnacl_scrypt_hash(master_password, salt)
       end
 
       def authenticated?
@@ -116,6 +133,19 @@ module Adamantite
         res = 0
         b.each_byte { |byte| res |= byte ^ l.shift }
         res.zero?
+      end
+
+      def rbnacl_random_bytes
+        RbNaCl::Random.random_bytes(RbNaCl::PasswordHash::SCrypt::SALTBYTES)
+      end
+
+      def rbnacl_scrypt_hash(password, salt)
+        RbNaCl::PasswordHash.scrypt(password, salt, OPSLIMIT, MEMLIMIT, DIGEST_SIZE)
+      end
+
+      def decode_encrypted_utf8_string(encrypted_string)
+        decoded_data = Base64.urlsafe_decode64(encrypted_string)
+        @vault.decrypt(decoded_data)
       end
     end
   end
