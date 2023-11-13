@@ -1,4 +1,5 @@
 require "file_utils/file_utils"
+require "rbnacl"
 
 include Adamantite::FileUtils
 
@@ -10,7 +11,7 @@ module Adamantite
 
       OPSLIMIT = 2**20
       MEMLIMIT = 2**24
-      DIGEST_SIZE = 64
+      DIGEST_SIZE = 32
 
       def initialize(master_password)
         @master_password = master_password
@@ -27,6 +28,9 @@ module Adamantite
             @authenticated = true
             @master_password_hash = master_password_hash
             @master_password_salt = master_password_salt
+            @master_vault_key = get_master_vault_key
+            derived_key = RbNaCl::PasswordHash.scrypt(@master_password, @master_password_salt, OPSLIMIT, MEMLIMIT, DIGEST_SIZE)
+            @vault = RbNaCl::SimpleBox.from_secret_key(derived_key)
             @stored_passwords = get_stored_pws
             true
           else
@@ -37,12 +41,34 @@ module Adamantite
         end
       end
 
+      def save_password(website_title, username, password, password_confirmation)
+        if password == password_confirmation && authenticated?
+          make_password_dir(website_title)
+          write_to_file(password_file(website_title, "website_title"), @vault.encrypt(website_title), true)
+          write_to_file(password_file(website_title, "username"), @vault.encrypt(username), true)
+          write_to_file(password_file(website_title, "password"), @vault.encrypt(password), true)
+        end
+      end
+
+      def retrieve_password_info(website_title, info_name)
+        if authenticated?
+          @vault.decrypt(read_file(password_file(website_title, info_name), true))
+        end
+      end
+
       def serialize_master_password(master_password, master_password_confirmation)
         if master_password == master_password_confirmation
-          salt = RbNaCl::Random.random_bytes(RbNaCl::PasswordHash::SCrypt::SALTBYTES)
-          master_password_hash = RbNaCl::PasswordHash.scrypt(master_password, salt, OPSLIMIT, MEMLIMIT, DIGEST_SIZE)
-          write_to_file("master_password_hash", master_password_hash, true)
-          write_to_file("master_password_salt", salt, true)
+          master_password_salt = RbNaCl::Random.random_bytes(RbNaCl::PasswordHash::SCrypt::SALTBYTES)
+          master_password_hash = RbNaCl::PasswordHash.scrypt(master_password, master_password_salt, OPSLIMIT, MEMLIMIT, DIGEST_SIZE)
+          vault_key = RbNaCl::Random.random_bytes(RbNaCl::PasswordHash::SCrypt::SALTBYTES)
+          derived_key = RbNaCl::PasswordHash.scrypt(master_password, master_password_salt, OPSLIMIT, MEMLIMIT, DIGEST_SIZE)
+
+          # Use the derived key to encrypt the vault key
+          vault = RbNaCl::SimpleBox.from_secret_key(derived_key)
+          encrypted_vault_key = vault.encrypt(vault_key)
+          write_to_file(password_file("master_password_hash"), master_password_hash, true)
+          write_to_file(password_file("master_password_salt"), master_password_salt, true)
+          write_to_file(password_file("master_vault_key"), encrypted_vault_key, true)
           true
         else
           false
@@ -68,28 +94,6 @@ module Adamantite
         @master_pw = new_master_pw
         @master_pw_salt = new_master_pw_salt
         true
-      end
-
-      def make_pw_info(username, pw, master_pw, master_pw_salt)
-        cipher = OpenSSL::Cipher::AES256.new(:CBC)
-        cipher.encrypt
-        iv = cipher.random_iv
-        cipher.key = Digest::MD5.hexdigest(master_pw + master_pw_salt)
-        cipher_text = cipher.update(pw) + cipher.final
-        utf8_cipher_text = Base64.encode64(cipher_text).encode('utf-8')
-        utf8_iv = Base64.encode64(iv).encode('utf-8')
-
-        {username: username, password: utf8_cipher_text, iv: utf8_iv}
-      end
-
-      def decrypt_pw(iv, pw_hash, master_pw, master_pw_salt)
-        decrypt_cipher = OpenSSL::Cipher::AES256.new(:CBC)
-        decrypt_cipher.decrypt
-        iv = Base64.decode64(iv.encode('ascii-8bit'))
-        decrypt_cipher.iv = iv
-        decrypt_cipher.key = Digest::MD5.hexdigest(master_pw + master_pw_salt)
-        decrypt_text = Base64.decode64(pw_hash.encode('ascii-8bit'))
-        decrypt_cipher.update(decrypt_text) + decrypt_cipher.final
       end
 
       def generate_master_password_hash(master_password, stored_salt = nil)

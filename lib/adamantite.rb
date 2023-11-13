@@ -47,8 +47,8 @@ module Adamantite
         [title, pw_info["username"], 'Edit', 'Copy', 'Show', 'Delete']
       end
       @adamantite = login_request.adamantite
-      @master_password = adamantite.master_password
-      @master_password_salt = adamantite.master_password_salt
+      @master_password = @adamantite.master_password
+      @master_password_salt = @adamantite.master_password_salt
       @add_password_request = GUI::Request::AddPasswordRequest.new(@master_password, @master_password_salt)
     end
 

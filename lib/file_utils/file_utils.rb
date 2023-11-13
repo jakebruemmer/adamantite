@@ -18,8 +18,16 @@ module Adamantite
 			Dir.mkdir(pwmanager_dir)
 		end
 
+		def make_password_dir(password_dir_title)
+			Dir.mkdir(File.join(pwmanager_dir, password_dir_title))
+		end
+
 		def pw_file(title)
 			File.join(pwmanager_dir, title)
+		end
+
+		def password_file(*args)
+			File.join(pwmanager_dir, *args)
 		end
 
 		def pw_file_exists?(title)
@@ -36,14 +44,26 @@ module Adamantite
 			end
 		end
 
-		def write_to_file(title, file_contents, binary)
+		def write_to_file(file_name, file_contents, binary)
 			if binary
-				File.open(pw_file(title), "wb") do |f|
+				File.open(file_name, "wb") do |f|
 					f.write(file_contents)
 				end
 			else
-				File.open(pw_file(title), "w") do |f|
+				File.open(file_name, "w") do |f|
 					f.write(file_contents)
+				end
+			end
+		end
+
+		def read_file(file_name, binary)
+			if binary
+				File.open(file_name, "rb") do |f|
+					f.read
+				end
+			else
+				File.open(file_name, "r") do |f|
+					f.read
 				end
 			end
 		end
@@ -72,8 +92,15 @@ module Adamantite
 			end
 		end
 
+		def get_master_vault_key
+			File.open(pw_file("master_vault_key"), "rb") do |f|
+				f.read
+			end
+		end
+
 		def get_stored_pws
-			Dir.entries(pwmanager_dir).filter { |f| ![".", "..", "master"].include?(f) }
+			excluded_filenames = [".", "..", "master_password_hash", "master_password_salt"]
+			Dir.entries(pwmanager_dir).filter { |f| !excluded_filenames.include?(f) }
 		end
 
 		def master_password_exists?
