@@ -1,12 +1,12 @@
 require "base/password_object"
-require "file_utils/file_utils"
+require "file_utils/adamantite_file_utils"
 require "pw_utils/pw_utils"
 
 module Adamantite
   module Base
     module Editor
       class PasswordObjectEditor
-        include FileUtils
+        include AdamantiteFileUtils
         include PWUtils
 
         # editable_user provides the temporary user object for editing
@@ -14,10 +14,9 @@ module Adamantite
 
         # initializes a user editor with nil when creating a new user
         # or with an existing user when editing an existing user
-        def initialize(master_pw, master_pw_salt, password_object = nil)
+        def initialize(adamantite, password_object = nil)
           @password_object = password_object || PasswordObject.new
-          @master_pw = master_pw
-          @master_pw_salt = master_pw_salt
+          @adamantite = adamantite
           reset_editable_password_object
         end
 
@@ -36,8 +35,10 @@ module Adamantite
           @password_object.username = @editable_password_object.username
           @password_object.password = @editable_password_object.password
           @password_object.password_confirmation = @editable_password_object.password_confirmation
-          pw_info_for_file = make_pw_info(@password_object.username, @password_object.password, @master_pw, @master_pw_salt)
-          write_pw_to_file(@password_object.website_title, **pw_info_for_file)
+          @password_object.dir_name = @adamantite.save_password(@password_object.website_title, @password_object.username, @password_object.password, @password_object.password_confirmation)
+          if @password_object.initial_dir_name
+            @adamantite.delete_password(@password_object.initial_dir_name)
+          end
           @password_object
         end
 

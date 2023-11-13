@@ -1,7 +1,7 @@
 require "json"
 
 module Adamantite
-	module FileUtils
+	module AdamantiteFileUtils
 		def home_dir
 			ENV['HOME']
 		end

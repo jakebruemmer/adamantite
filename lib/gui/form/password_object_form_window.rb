@@ -10,11 +10,10 @@ module Adamantite
         # And, a user can be optionally passed (e.g. `user_form(user: someuser)`) when editing an existing user
         option :password_object, default: nil
         option :on_save, default: lambda { |password_object| }
-        option :master_pw
-        option :master_pw_salt
+        option :adamantite
 
         before_body do
-          @password_object_editor = Adamantite::Base::Editor::PasswordObjectEditor.new(master_pw, master_pw_salt, password_object)
+          @password_object_editor = Base::Editor::PasswordObjectEditor.new(adamantite, password_object)
         end
 
         body {

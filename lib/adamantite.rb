@@ -5,8 +5,8 @@ require "base64"
 require "json"
 require "io/console"
 
-require "file_utils/file_utils"
-require "pw_utils/pw_utils"
+require "fileutils"
+require "file_utils/adamantite_file_utils"
 require "base/adamantite"
 require "base/password_object"
 require "gui/screen/login_screen"
@@ -20,8 +20,7 @@ require "gui/request/update_master_password_request"
 require "gui/request/set_master_password_request"
 require "gui/form/password_object_form_window"
 
-include Adamantite::FileUtils
-include Adamantite::PWUtils
+include Adamantite::AdamantiteFileUtils
 
 module Adamantite
   class AdamantiteApp
@@ -42,11 +41,10 @@ module Adamantite
         exit(0)
       end
 
-      @stored_passwords = get_stored_pws.map do |title|
-        pw_info = get_pw_file(title)
-        [title, pw_info["username"], 'Edit', 'Copy', 'Show', 'Delete']
-      end
       @adamantite = login_request.adamantite
+      @stored_passwords = @adamantite.stored_passwords.map do |stored_password|
+        [stored_password[:website_title], stored_password[:username], 'Edit', 'Copy', 'Show', 'Delete']
+      end
       @master_password = @adamantite.master_password
       @master_password_salt = @adamantite.master_password_salt
       @add_password_request = GUI::Request::AddPasswordRequest.new(@master_password, @master_password_salt)
@@ -62,7 +60,7 @@ module Adamantite
             text_column('Username')
             button_column('Edit') {
               on_clicked do |row|
-                on_save = lambda { |password_object|
+                on_save = lambda do |password_object|
                   stored_password = []
                   stored_password << password_object.website_title
                   stored_password << password_object.username
@@ -71,34 +69,40 @@ module Adamantite
                   stored_password << 'Show'
                   stored_password << 'Delete'
                   @stored_passwords[password_object.row_index] = stored_password
-                }
-                password_title = @stored_passwords[row].first
+                  adamantite_stored_password = {
+                    "dir_name": password_object.dir_name,
+                    "website_title": password_object.website_title,
+                    "username": @adamantite.retrieve_password_info(password_object.dir_name, "username")
+                  }
+                  @adamantite.stored_passwords[password_object.row_index] = adamantite_stored_password
+                end
+                website_title = @stored_passwords[row][0]
                 username = @stored_passwords[row][1]
-                pw_info = get_pw_file(password_title)
-                stored_pw_selection = decrypt_pw(pw_info["iv"], pw_info["password"], @master_password, @master_password_salt)
-                password_object = Base::PasswordObject.new(password_title, username, stored_pw_selection, stored_pw_selection, row)
-                password_object_form_window(master_pw: @master_password, master_pw_salt: @master_password_salt, on_save: on_save, password_object: password_object).show
+                dir_name = @adamantite.stored_passwords[row][:dir_name]
+                password = @adamantite.retrieve_password_info(dir_name, "password")
+                password_object = Base::PasswordObject.new(website_title, username, password, password, row, dir_name)
+                password_object_form_window(adamantite: @adamantite, on_save: on_save, password_object: password_object).show
               end
             }
             button_column('Copy') {
               on_clicked do |row|
-                password_title = @stored_passwords[row].first
-                pw_info = get_pw_file(password_title)
-                stored_pw_selection = decrypt_pw(pw_info["iv"], pw_info["password"], @master_password, @master_password_salt)
-                IO.popen('pbcopy', 'w') { |f| f << stored_pw_selection }
-                copy_screen(password_title: password_title).show
+                IO.popen('pbcopy', 'w') do |f|
+                  dir_name = @adamantite.stored_passwords[row][:dir_name]
+                  f << @adamantite.retrieve_password_info(dir_name, "password")
+                end
+                copy_screen(password_title: @stored_passwords[row].first).show
               end
             }
             button_column('Show') {
               on_clicked do |row|
-                pw_info = get_pw_file(@stored_passwords[row].first)
-                stored_pw_selection = decrypt_pw(pw_info["iv"], pw_info["password"], @master_password, @master_password_salt)
-                show_screen(password: stored_pw_selection).show
+                dir_name = @adamantite.stored_passwords[row][:dir_name]
+                show_screen(password: @adamantite.retrieve_password_info(dir_name, "password")).show
               end
             }
             button_column('Delete') {
               on_clicked do |row|
-                delete_pw_file(@stored_passwords[row].first)
+                @adamantite.delete_password(@adamantite.stored_passwords[row][:dir_name])
+                @adamantite.stored_passwords.delete_at(row)
                 @stored_passwords.delete_at(row)
               end
             }
@@ -107,7 +111,7 @@ module Adamantite
           horizontal_box {
             button('Add Password') {
               on_clicked do
-                on_save = lambda { |password_object|
+                on_save = lambda do |password_object|
                   stored_password = []
                   stored_password << password_object.website_title
                   stored_password << password_object.username
@@ -116,8 +120,14 @@ module Adamantite
                   stored_password << 'Show'
                   stored_password << 'Delete'
                   @stored_passwords << stored_password
-                }
-                password_object_form_window(master_pw: @master_password, master_pw_salt: @master_password_salt, on_save: on_save).show
+                  adamantite_stored_password = {
+                    "dir_name": password_object.dir_name,
+                    "website_title": password_object.website_title,
+                    "username": @adamantite.retrieve_password_info(password_object.dir_name, "username")
+                  }
+                  @adamantite.stored_passwords << adamantite_stored_password
+                end
+                password_object_form_window(adamantite: @adamantite, on_save: on_save).show
               end
             }
             button('Update Master Password') {

@@ -1,14 +1,13 @@
-require "file_utils/file_utils"
+require "file_utils/adamantite_file_utils"
 require "rbnacl"
 require "base64"
-
-include Adamantite::FileUtils
 
 module Adamantite
   module Base
     class Adamantite
+      include AdamantiteFileUtils
 
-      attr_reader :authenticated, :master_password, :master_password_salt
+      attr_reader :authenticated, :master_password, :master_password_salt, :stored_passwords
 
       OPSLIMIT = 2**20
       MEMLIMIT = 2**24
@@ -32,7 +31,13 @@ module Adamantite
             @master_vault_key = get_master_vault_key
             derived_key = rbnacl_scrypt_hash(master_password, master_password_salt)
             @vault = RbNaCl::SimpleBox.from_secret_key(derived_key)
-            @stored_passwords = get_stored_pws
+            @stored_passwords = get_stored_pws.map do |stored_password|
+              {
+                "dir_name": stored_password,
+                "website_title": decode_encrypted_utf8_string(stored_password),
+                "username": retrieve_password_info(stored_password, "username")
+              }
+            end
             true
           else
             false
@@ -49,7 +54,12 @@ module Adamantite
           make_password_dir(dir_name)
           write_to_file(password_file(dir_name, "username"), @vault.encrypt(username), true)
           write_to_file(password_file(dir_name, "password"), @vault.encrypt(password), true)
+          dir_name
         end
+      end
+
+      def delete_password(password_dir_name)
+        FileUtils.remove_entry_secure(password_file(password_dir_name))
       end
 
       def retrieve_password_info(website_title, info_name)
@@ -66,9 +76,7 @@ module Adamantite
           derived_key = rbnacl_scrypt_hash(master_password, master_password_salt)
           vault = RbNaCl::SimpleBox.from_secret_key(derived_key)
           encrypted_vault_key = vault.encrypt(vault_key)
-          write_to_file(password_file("master_password_hash"), master_password_hash, true)
-          write_to_file(password_file("master_password_salt"), master_password_salt, true)
-          write_to_file(password_file("master_vault_key"), encrypted_vault_key, true)
+          write_master_info(master_password_hash, master_password_salt, encrypted_vault_key)
           true
         else
           false
@@ -100,12 +108,10 @@ module Adamantite
             write_to_file(password_file(new_password["dir_name"], "password"), new_password["password"], true)
           end
 
-          write_to_file(password_file("master_password_hash"), master_password_hash, true)
-          write_to_file(password_file("master_password_salt"), master_password_salt, true)
-          write_to_file(password_file("master_vault_key"), encrypted_vault_key, true)
+          write_master_info(master_password_hash, master_password_salt, encrypted_vault_key)
           @master_password_hash = master_password_hash
           @master_password_salt = master_password_salt
-          @master_vault_key = get_master_vault_key
+          @master_vault_key = encrypted_vault_key
           @vault = vault
           true
         else
@@ -146,6 +152,12 @@ module Adamantite
       def decode_encrypted_utf8_string(encrypted_string)
         decoded_data = Base64.urlsafe_decode64(encrypted_string)
         @vault.decrypt(decoded_data)
+      end
+
+      def write_master_info(master_password_hash, master_password_salt, master_vault_key)
+        write_to_file(password_file("master_password_hash"), master_password_hash, true)
+        write_to_file(password_file("master_password_salt"), master_password_salt, true)
+        write_to_file(password_file("master_vault_key"), encrypted_vault_key, true)
       end
     end
   end
