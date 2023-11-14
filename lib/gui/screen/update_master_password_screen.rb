@@ -24,7 +24,7 @@ module Adamantite
                 on_clicked do
                   new_master_pw = update_master_password_request.new_master_pw
                   new_master_pw_confirmation = update_master_password_request.new_master_pw_confirmation
-                  success = update_master_password_request.adamantite_object.update_master_password!(new_master_pw, new_master_pw_confirmation)
+                  success = update_master_password_request.adamantite.update_master_password!(new_master_pw, new_master_pw_confirmation)
                   if success
                     body_root.destroy
                     ::LibUI.quit

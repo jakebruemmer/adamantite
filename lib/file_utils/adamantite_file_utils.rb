@@ -7,7 +7,11 @@ module Adamantite
 		end
 
 		def pwmanager_dir
-			File.join(home_dir, '.pwmanager')
+			File.join(home_dir, '.adamantite')
+		end
+
+		def pwmanager_tmp_dir
+			File.join(home_dir, '.adamantite_tmp')
 		end
 
 		def pwmanager_dir_exists?

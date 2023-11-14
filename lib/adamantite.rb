@@ -102,7 +102,6 @@ module Adamantite
             button_column('Delete') {
               on_clicked do |row|
                 @adamantite.delete_password(@adamantite.stored_passwords[row][:dir_name])
-                @adamantite.stored_passwords.delete_at(row)
                 @stored_passwords.delete_at(row)
               end
             }
@@ -120,12 +119,6 @@ module Adamantite
                   stored_password << 'Show'
                   stored_password << 'Delete'
                   @stored_passwords << stored_password
-                  adamantite_stored_password = {
-                    "dir_name": password_object.dir_name,
-                    "website_title": password_object.website_title,
-                    "username": @adamantite.retrieve_password_info(password_object.dir_name, "username")
-                  }
-                  @adamantite.stored_passwords << adamantite_stored_password
                 end
                 password_object_form_window(adamantite: @adamantite, on_save: on_save).show
               end

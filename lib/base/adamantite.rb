@@ -31,13 +31,7 @@ module Adamantite
             @master_vault_key = get_master_vault_key
             derived_key = rbnacl_scrypt_hash(master_password, master_password_salt)
             @vault = RbNaCl::SimpleBox.from_secret_key(derived_key)
-            @stored_passwords = get_stored_pws.map do |stored_password|
-              {
-                "dir_name": stored_password,
-                "website_title": decode_encrypted_utf8_string(stored_password),
-                "username": retrieve_password_info(stored_password, "username")
-              }
-            end
+            update_stored_passwords!
             true
           else
             false
@@ -54,12 +48,14 @@ module Adamantite
           make_password_dir(dir_name)
           write_to_file(password_file(dir_name, "username"), @vault.encrypt(username), true)
           write_to_file(password_file(dir_name, "password"), @vault.encrypt(password), true)
+          update_stored_passwords!
           dir_name
         end
       end
 
       def delete_password(password_dir_name)
         FileUtils.remove_entry_secure(password_file(password_dir_name))
+        update_stored_passwords!
       end
 
       def retrieve_password_info(website_title, info_name)
@@ -76,6 +72,7 @@ module Adamantite
           derived_key = rbnacl_scrypt_hash(master_password, master_password_salt)
           vault = RbNaCl::SimpleBox.from_secret_key(derived_key)
           encrypted_vault_key = vault.encrypt(vault_key)
+          make_pwmanager_dir
           write_master_info(master_password_hash, master_password_salt, encrypted_vault_key)
           true
         else
@@ -88,31 +85,30 @@ module Adamantite
           master_password_salt = rbnacl_random_bytes
           master_password_hash = generate_master_password_hash(new_master_password, master_password_salt)
           vault_key = rbnacl_random_bytes
-          derived_key = rbnacl_scrypt_hash(master_password, master_password_salt)
+          derived_key = rbnacl_scrypt_hash(new_master_password, master_password_salt)
           vault = RbNaCl::SimpleBox.from_secret_key(derived_key)
           encrypted_vault_key = vault.encrypt(vault_key)
 
           new_password_data = @stored_passwords.map do |stored_password|
             info = {}
-            website_title = vault.encrypt(decode_encrypted_utf8_string(stored_password))
-            encrypted_file_name_ascii_8bit = @vault.encrypt(website_title)
-            dir_name = Base64.urlsafe_encode64(encrypted_file_name_ascii_8bit)
-            info["dir_name"] = dir_name
-            info["username"] = vault.encrypt(@vault.decrypt(read_file(password_file(stored_password, "username"), true)))
-            info["password"] = vault.encrypt(@vault.decrypt(read_file(password_file(stored_password, "password"), true)))
+            info["website_title"] = stored_password[:website_title]
+            info["username"] = retrieve_password_info(stored_password[:dir_name], "username")
+            info["password"] = retrieve_password_info(stored_password[:dir_name], "password")
+            info
           end
 
+          FileUtils.copy_entry(pwmanager_dir, pwmanager_tmp_dir)
+          FileUtils.remove_entry_secure(pwmanager_dir)
+          @vault = vault
+          make_pwmanager_dir
           new_password_data.each do |new_password|
-            make_password_dir(new_password["dir_name"])
-            write_to_file(password_file(new_password["dir_name"], "username"), new_password["username"], true)
-            write_to_file(password_file(new_password["dir_name"], "password"), new_password["password"], true)
+            save_password(new_password["website_title"], new_password["username"], new_password["password"], new_password["password"])
           end
-
+          FileUtils.remove_entry_secure(pwmanager_tmp_dir)
           write_master_info(master_password_hash, master_password_salt, encrypted_vault_key)
           @master_password_hash = master_password_hash
           @master_password_salt = master_password_salt
           @master_vault_key = encrypted_vault_key
-          @vault = vault
           true
         else
           false
@@ -128,14 +124,22 @@ module Adamantite
         @authenticated
       end
 
+      def update_stored_passwords!
+        @stored_passwords = get_stored_pws.map do |stored_password|
+          {
+            "dir_name": stored_password,
+            "website_title": decode_encrypted_utf8_string(stored_password),
+            "username": retrieve_password_info(stored_password, "username")
+          }
+        end
+      end
+
       private
 
       # Constant-time comparison to prevent timing attacks
       def secure_compare(a, b)
         return false unless a.bytesize == b.bytesize
-
         l = a.unpack("C#{a.bytesize}")
-
         res = 0
         b.each_byte { |byte| res |= byte ^ l.shift }
         res.zero?
@@ -157,7 +161,7 @@ module Adamantite
       def write_master_info(master_password_hash, master_password_salt, master_vault_key)
         write_to_file(password_file("master_password_hash"), master_password_hash, true)
         write_to_file(password_file("master_password_salt"), master_password_salt, true)
-        write_to_file(password_file("master_vault_key"), encrypted_vault_key, true)
+        write_to_file(password_file("master_vault_key"), master_vault_key, true)
       end
     end
   end
