@@ -96,19 +96,19 @@ module Adamantite
 			end
 		end
 
-		def get_master_vault_key
-			File.open(pw_file("master_vault_key"), "rb") do |f|
+		def get_master_encrypted_vault_key
+			File.open(pw_file("master_encrypted_vault_key"), "rb") do |f|
 				f.read
 			end
 		end
 
 		def get_stored_pws
-			excluded_filenames = [".", "..", "master_password_hash", "master_password_salt", "master_vault_key"]
+			excluded_filenames = [".", "..", "master_password_hash", "master_password_salt", "master_encrypted_vault_key"]
 			Dir.entries(pwmanager_dir).filter { |f| !excluded_filenames.include?(f) }
 		end
 
 		def master_password_exists?
-			pw_file_exists?("master_password_hash") && pw_file_exists?("master_password_salt")
+			pw_file_exists?("master_encrypted_vault_key") && pw_file_exists?("master_password_salt")
 		end
 	end
 end

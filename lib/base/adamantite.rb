@@ -20,20 +20,19 @@ module Adamantite
 
       def authenticate!
         if master_password_exists?
-          master_password_hash = get_master_password_hash
           master_password_salt = get_master_password_salt
-          entered_master_password_hash = generate_master_password_hash(@master_password, master_password_salt)
+          master_encrypted_vault_key = get_master_encrypted_vault_key
+          entered_master_password_hash = rbnacl_scrypt_hash(@master_password, master_password_salt)
+          vault = rbnacl_box(entered_master_password_hash)
 
-          if secure_compare(entered_master_password_hash, master_password_hash)
+          begin
+            @master_vault_key = vault.decrypt(master_encrypted_vault_key)
             @authenticated = true
-            @master_password_hash = master_password_hash
             @master_password_salt = master_password_salt
-            @master_vault_key = get_master_vault_key
-            derived_key = rbnacl_scrypt_hash(master_password, master_password_salt)
-            @vault = RbNaCl::SimpleBox.from_secret_key(derived_key)
+            @vault = rbnacl_box(@master_vault_key)
             update_stored_passwords!
             true
-          else
+          rescue RbNaCl::CryptoError
             false
           end
         else
@@ -69,11 +68,10 @@ module Adamantite
           master_password_salt = rbnacl_random_bytes
           master_password_hash = rbnacl_scrypt_hash(master_password, master_password_salt)
           vault_key = rbnacl_random_bytes
-          derived_key = rbnacl_scrypt_hash(master_password, master_password_salt)
-          vault = RbNaCl::SimpleBox.from_secret_key(derived_key)
+          vault = rbnacl_box(master_password_hash)
           encrypted_vault_key = vault.encrypt(vault_key)
           make_pwmanager_dir
-          write_master_info(master_password_hash, master_password_salt, encrypted_vault_key)
+          write_master_info(master_password_salt, encrypted_vault_key)
           true
         else
           false
@@ -82,11 +80,10 @@ module Adamantite
 
       def update_master_password!(new_master_password, new_master_password_confirmation)
         if new_master_password == new_master_password_confirmation && authenticated?
-          master_password_salt = rbnacl_random_bytes
-          master_password_hash = generate_master_password_hash(new_master_password, master_password_salt)
+          new_master_password_salt = rbnacl_random_bytes
+          new_master_password_hash = generate_master_password_hash(new_master_password, master_password_salt)
           vault_key = rbnacl_random_bytes
-          derived_key = rbnacl_scrypt_hash(new_master_password, master_password_salt)
-          vault = RbNaCl::SimpleBox.from_secret_key(derived_key)
+          vault = rbnacl_box(new_master_password_hash)
           encrypted_vault_key = vault.encrypt(vault_key)
 
           new_password_data = @stored_passwords.map do |stored_password|
@@ -99,16 +96,15 @@ module Adamantite
 
           FileUtils.copy_entry(pwmanager_dir, pwmanager_tmp_dir)
           FileUtils.remove_entry_secure(pwmanager_dir)
-          @vault = vault
+          @vault = rbnacl_box(vault_key)
           make_pwmanager_dir
           new_password_data.each do |new_password|
             save_password(new_password["website_title"], new_password["username"], new_password["password"], new_password["password"])
           end
           FileUtils.remove_entry_secure(pwmanager_tmp_dir)
-          write_master_info(master_password_hash, master_password_salt, encrypted_vault_key)
-          @master_password_hash = master_password_hash
+          write_master_info(master_password_salt, encrypted_vault_key)
           @master_password_salt = master_password_salt
-          @master_vault_key = encrypted_vault_key
+          @master_encrypted_vault_key = encrypted_vault_key
           true
         else
           false
@@ -136,13 +132,8 @@ module Adamantite
 
       private
 
-      # Constant-time comparison to prevent timing attacks
-      def secure_compare(a, b)
-        return false unless a.bytesize == b.bytesize
-        l = a.unpack("C#{a.bytesize}")
-        res = 0
-        b.each_byte { |byte| res |= byte ^ l.shift }
-        res.zero?
+      def rbnacl_box(key)
+        RbNaCl::SimpleBox.from_secret_key(key)
       end
 
       def rbnacl_random_bytes
@@ -158,10 +149,9 @@ module Adamantite
         @vault.decrypt(decoded_data)
       end
 
-      def write_master_info(master_password_hash, master_password_salt, master_vault_key)
-        write_to_file(password_file("master_password_hash"), master_password_hash, true)
+      def write_master_info(master_password_salt, master_vault_key)
         write_to_file(password_file("master_password_salt"), master_password_salt, true)
-        write_to_file(password_file("master_vault_key"), master_vault_key, true)
+        write_to_file(password_file("master_encrypted_vault_key"), master_vault_key, true)
       end
     end
   end
