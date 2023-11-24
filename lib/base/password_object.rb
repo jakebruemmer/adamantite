@@ -1,9 +1,13 @@
+# frozen_string_literal: true
+
 module Adamantite
   module Base
     class PasswordObject
-      attr_accessor :website_title, :username, :password, :password_confirmation, :row_index, :dir_name, :initial_dir_name
+      attr_accessor :website_title, :username, :password, :password_confirmation,
+                    :row_index, :dir_name, :initial_dir_name
 
-      def initialize(website_title = nil, username = nil, password = nil, password_confirmation = nil, row_index = nil, initial_dir_name = nil)
+      def initialize(website_title = nil, username = nil, password = nil,
+                     password_confirmation = nil, row_index = nil, initial_dir_name = nil)
         @website_title = website_title
         @username = username
         @password = password

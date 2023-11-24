@@ -1,5 +1,8 @@
-source "https://rubygems.org"
+# frozen_string_literal: true
 
-gem "glimmer-dsl-libui"
-gem "bcrypt"
-gem "rbnacl"
+source 'https://rubygems.org'
+
+gem 'bcrypt'
+gem 'glimmer-dsl-libui'
+gem 'rbnacl'
+gem 'rubocop', require: false

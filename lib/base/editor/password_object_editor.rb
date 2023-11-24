@@ -1,6 +1,8 @@
-require "base/password_object"
-require "file_utils/adamantite_file_utils"
-require "pw_utils/pw_utils"
+# frozen_string_literal: true
+
+require 'base/password_object'
+require 'file_utils/adamantite_file_utils'
+require 'pw_utils/pw_utils'
 
 module Adamantite
   module Base
@@ -31,14 +33,17 @@ module Adamantite
         # saves editable user data and returns final user to add to DB/File/Array/etc...
         def save
           return false unless @password_object.password == @password_object.password_confirmation
+
           @password_object.website_title = @editable_password_object.website_title
           @password_object.username = @editable_password_object.username
           @password_object.password = @editable_password_object.password
           @password_object.password_confirmation = @editable_password_object.password_confirmation
-          @password_object.dir_name = @adamantite.save_password(@password_object.website_title, @password_object.username, @password_object.password, @password_object.password_confirmation)
-          if @password_object.initial_dir_name
-            @adamantite.delete_password(@password_object.initial_dir_name)
-          end
+          @password_object.dir_name = @adamantite.save_password(@password_object.website_title,
+                                                                @password_object.username,
+                                                                @password_object.password,
+                                                                @password_object.password_confirmation)
+
+          @adamantite.delete_password(@password_object.initial_dir_name) if @password_object.initial_dir_name
           @password_object
         end
 
