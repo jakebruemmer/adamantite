@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Adamantite
   module GUI
     module Screen
@@ -6,12 +8,12 @@ module Adamantite
 
         option :password_title
 
-        body {
-          window('Adamantite - Copy Password', 400, 100) {
+        body do
+          window('Adamantite - Copy Password', 400, 100) do
             margined true
             label("Copied password for #{password_title} to your clipboard.")
-          }
-        }
+          end
+        end
       end
     end
   end
