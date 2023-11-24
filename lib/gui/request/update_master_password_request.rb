@@ -1,8 +1,9 @@
+# frozen_string_literal: true
+
 module Adamantite
   module GUI
     module Request
       class UpdateMasterPasswordRequest
-
         attr_accessor :new_master_pw, :new_master_pw_confirmation, :adamantite
 
         def initialize(adamantite)
