@@ -1,10 +1,11 @@
-require "base/adamantite"
+# frozen_string_literal: true
+
+require 'base/adamantite'
 
 module Adamantite
   module GUI
     module Request
       class SetMasterPasswordRequest
-
         attr_accessor :new_master_pw, :new_master_pw_confirmation, :success
 
         def set_master_password!
