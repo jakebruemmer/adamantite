@@ -1,6 +1,8 @@
-require "file_utils/adamantite_file_utils"
-require "rbnacl"
-require "base64"
+# frozen_string_literal: true
+
+require 'file_utils/adamantite_file_utils'
+require 'rbnacl'
+require 'base64'
 
 module Adamantite
   module Base
@@ -41,15 +43,15 @@ module Adamantite
       end
 
       def save_password(website_title, username, password, password_confirmation)
-        if password == password_confirmation && authenticated?
-          encrypted_file_name_ascii_8bit = @vault.encrypt(website_title)
-          dir_name = Base64.urlsafe_encode64(encrypted_file_name_ascii_8bit)
-          make_password_dir(dir_name)
-          write_to_file(password_file(dir_name, "username"), @vault.encrypt(username), true)
-          write_to_file(password_file(dir_name, "password"), @vault.encrypt(password), true)
-          update_stored_passwords!
-          dir_name
-        end
+        return unless password == password_confirmation && authenticated?
+
+        encrypted_file_name_ascii_8bit = @vault.encrypt(website_title)
+        dir_name = Base64.urlsafe_encode64(encrypted_file_name_ascii_8bit)
+        make_password_dir(dir_name)
+        write_to_file(password_file(dir_name, 'username'), @vault.encrypt(username), true)
+        write_to_file(password_file(dir_name, 'password'), @vault.encrypt(password), true)
+        update_stored_passwords!
+        dir_name
       end
 
       def delete_password(password_dir_name)
@@ -58,9 +60,9 @@ module Adamantite
       end
 
       def retrieve_password_info(website_title, info_name)
-        if authenticated?
-          @vault.decrypt(read_file(password_file(website_title, info_name), true))
-        end
+        return unless authenticated?
+
+        @vault.decrypt(read_file(password_file(website_title, info_name), true))
       end
 
       def serialize_master_password(master_password, master_password_confirmation)
@@ -81,16 +83,16 @@ module Adamantite
       def update_master_password!(new_master_password, new_master_password_confirmation)
         if new_master_password == new_master_password_confirmation && authenticated?
           new_master_password_salt = rbnacl_random_bytes
-          new_master_password_hash = generate_master_password_hash(new_master_password, master_password_salt)
+          new_master_password_hash = rbnacl_scrypt_hash(new_master_password, new_master_password_salt)
           vault_key = rbnacl_random_bytes
           vault = rbnacl_box(new_master_password_hash)
           encrypted_vault_key = vault.encrypt(vault_key)
 
           new_password_data = @stored_passwords.map do |stored_password|
             info = {}
-            info["website_title"] = stored_password[:website_title]
-            info["username"] = retrieve_password_info(stored_password[:dir_name], "username")
-            info["password"] = retrieve_password_info(stored_password[:dir_name], "password")
+            info['website_title'] = stored_password[:website_title]
+            info['username'] = retrieve_password_info(stored_password[:dir_name], 'username')
+            info['password'] = retrieve_password_info(stored_password[:dir_name], 'password')
             info
           end
 
@@ -99,21 +101,19 @@ module Adamantite
           @vault = rbnacl_box(vault_key)
           make_pwmanager_dir
           new_password_data.each do |new_password|
-            save_password(new_password["website_title"], new_password["username"], new_password["password"], new_password["password"])
+            website_title = new_password['website_title']
+            username = new_password['username']
+            password = new_password['password']
+            save_password(website_title, username, password, password)
           end
           FileUtils.remove_entry_secure(pwmanager_tmp_dir)
-          write_master_info(master_password_salt, encrypted_vault_key)
+          write_master_info(new_master_password_salt, encrypted_vault_key)
           @master_password_salt = master_password_salt
           @master_encrypted_vault_key = encrypted_vault_key
           true
         else
           false
         end
-      end
-
-      def generate_master_password_hash(master_password, stored_salt = nil)
-        salt = stored_salt.nil? ? rbnacl_random_bytes : stored_salt
-        rbnacl_scrypt_hash(master_password, salt)
       end
 
       def authenticated?
@@ -123,9 +123,9 @@ module Adamantite
       def update_stored_passwords!
         @stored_passwords = get_stored_pws.map do |stored_password|
           {
-            "dir_name": stored_password,
-            "website_title": decode_encrypted_utf8_string(stored_password),
-            "username": retrieve_password_info(stored_password, "username")
+            'dir_name': stored_password,
+            'website_title': decode_encrypted_utf8_string(stored_password),
+            'username': retrieve_password_info(stored_password, 'username')
           }
         end
       end
@@ -150,8 +150,8 @@ module Adamantite
       end
 
       def write_master_info(master_password_salt, master_vault_key)
-        write_to_file(password_file("master_password_salt"), master_password_salt, true)
-        write_to_file(password_file("master_encrypted_vault_key"), master_vault_key, true)
+        write_to_file(password_file('master_password_salt'), master_password_salt, true)
+        write_to_file(password_file('master_encrypted_vault_key'), master_vault_key, true)
       end
     end
   end
