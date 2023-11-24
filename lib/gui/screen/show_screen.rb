@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Adamantite
   module GUI
     module Screen
@@ -6,13 +8,13 @@ module Adamantite
 
         option :password
 
-        body {
-          window('Adamantite - Show Password', 400, 100) {
+        body do
+          window('Adamantite - Show Password', 400, 100) do
             margined true
 
-            label("#{password}")
-          }
-        }
+            label(password.to_s)
+          end
+        end
       end
     end
   end
