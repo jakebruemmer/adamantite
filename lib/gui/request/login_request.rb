@@ -5,6 +5,7 @@ require 'base/adamantite'
 module Adamantite
   module GUI
     module Request
+      class LoginRequest
 
         attr_accessor :adamantite, :master_password, :authenticated
 
