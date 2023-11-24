@@ -1,58 +1,157 @@
-require "file_utils/file_utils"
-require "pw_utils/pw_utils"
-
-include Adamantite::FileUtils
-include Adamantite::PWUtils
+require "file_utils/adamantite_file_utils"
+require "rbnacl"
+require "base64"
 
 module Adamantite
   module Base
     class Adamantite
+      include AdamantiteFileUtils
 
-      attr_accessor :authenticated
+      attr_reader :authenticated, :master_password, :master_password_salt, :stored_passwords
 
-      def initialize(master_pw)
-        @master_pw = master_pw
+      OPSLIMIT = 2**20
+      MEMLIMIT = 2**24
+      DIGEST_SIZE = 32
+
+      def initialize(master_password)
+        @master_password = master_password
         @authenticated = false
-        @master_pw_exists = pw_file_exists?('master')
       end
 
       def authenticate!
-        return false unless @master_pw_exists
-        master_pw_info = get_master_pw_info
-        master_pw_hash = master_pw_info['password']
-        master_pw_salt = master_pw_info['salt']
-        master_pw_comparator = generate_master_pw_comparator(master_pw_hash)
+        if master_password_exists?
+          master_password_salt = get_master_password_salt
+          master_encrypted_vault_key = get_master_encrypted_vault_key
+          entered_master_password_hash = rbnacl_scrypt_hash(@master_password, master_password_salt)
+          vault = rbnacl_box(entered_master_password_hash)
 
-        if master_pw_comparator == @master_pw + master_pw_salt
-          @authenticated = true
-          @master_pw_hash = master_pw_hash
-          @master_pw_salt = master_pw_salt
-          @stored_passwords = get_stored_pws
+          begin
+            @master_vault_key = vault.decrypt(master_encrypted_vault_key)
+            @authenticated = true
+            @master_password_salt = master_password_salt
+            @vault = rbnacl_box(@master_vault_key)
+            update_stored_passwords!
+            true
+          rescue RbNaCl::CryptoError
+            false
+          end
+        else
+          false
+        end
+      end
+
+      def save_password(website_title, username, password, password_confirmation)
+        if password == password_confirmation && authenticated?
+          encrypted_file_name_ascii_8bit = @vault.encrypt(website_title)
+          dir_name = Base64.urlsafe_encode64(encrypted_file_name_ascii_8bit)
+          make_password_dir(dir_name)
+          write_to_file(password_file(dir_name, "username"), @vault.encrypt(username), true)
+          write_to_file(password_file(dir_name, "password"), @vault.encrypt(password), true)
+          update_stored_passwords!
+          dir_name
+        end
+      end
+
+      def delete_password(password_dir_name)
+        FileUtils.remove_entry_secure(password_file(password_dir_name))
+        update_stored_passwords!
+      end
+
+      def retrieve_password_info(website_title, info_name)
+        if authenticated?
+          @vault.decrypt(read_file(password_file(website_title, info_name), true))
+        end
+      end
+
+      def serialize_master_password(master_password, master_password_confirmation)
+        if master_password == master_password_confirmation
+          master_password_salt = rbnacl_random_bytes
+          master_password_hash = rbnacl_scrypt_hash(master_password, master_password_salt)
+          vault_key = rbnacl_random_bytes
+          vault = rbnacl_box(master_password_hash)
+          encrypted_vault_key = vault.encrypt(vault_key)
+          make_pwmanager_dir
+          write_master_info(master_password_salt, encrypted_vault_key)
           true
         else
           false
         end
       end
 
-      def update_master_password!(new_master_pw, new_master_pw_confirmation)
-        return false unless new_master_pw == new_master_pw_confirmation && @authenticated
+      def update_master_password!(new_master_password, new_master_password_confirmation)
+        if new_master_password == new_master_password_confirmation && authenticated?
+          new_master_password_salt = rbnacl_random_bytes
+          new_master_password_hash = generate_master_password_hash(new_master_password, master_password_salt)
+          vault_key = rbnacl_random_bytes
+          vault = rbnacl_box(new_master_password_hash)
+          encrypted_vault_key = vault.encrypt(vault_key)
 
-        new_master_pw_info = generate_master_pw_hash(new_master_pw)
-        new_master_pw_hash = new_master_pw_info[:master_pw_hash]
-        new_master_pw_salt = new_master_pw_info[:salt]
+          new_password_data = @stored_passwords.map do |stored_password|
+            info = {}
+            info["website_title"] = stored_password[:website_title]
+            info["username"] = retrieve_password_info(stored_password[:dir_name], "username")
+            info["password"] = retrieve_password_info(stored_password[:dir_name], "password")
+            info
+          end
 
-        @stored_passwords.each do |stored_password|
-          pw_info = get_pw_file(stored_password)
-          pw = decrypt_pw(pw_info['iv'], pw_info['password'], @master_pw, @master_pw_salt)
-          pw_info_for_file = make_pw_info(pw_info['username'], pw, new_master_pw, new_master_pw_salt)
-          write_pw_to_file(stored_password, **pw_info_for_file)
+          FileUtils.copy_entry(pwmanager_dir, pwmanager_tmp_dir)
+          FileUtils.remove_entry_secure(pwmanager_dir)
+          @vault = rbnacl_box(vault_key)
+          make_pwmanager_dir
+          new_password_data.each do |new_password|
+            save_password(new_password["website_title"], new_password["username"], new_password["password"], new_password["password"])
+          end
+          FileUtils.remove_entry_secure(pwmanager_tmp_dir)
+          write_master_info(master_password_salt, encrypted_vault_key)
+          @master_password_salt = master_password_salt
+          @master_encrypted_vault_key = encrypted_vault_key
+          true
+        else
+          false
         end
+      end
 
-        write_pw_to_file('master', password: new_master_pw_hash, salt: new_master_pw_salt)
-        @master_pw_hash = get_master_pw_info
-        @master_pw = new_master_pw
-        @master_pw_salt = new_master_pw_salt
-        true
+      def generate_master_password_hash(master_password, stored_salt = nil)
+        salt = stored_salt.nil? ? rbnacl_random_bytes : stored_salt
+        rbnacl_scrypt_hash(master_password, salt)
+      end
+
+      def authenticated?
+        @authenticated
+      end
+
+      def update_stored_passwords!
+        @stored_passwords = get_stored_pws.map do |stored_password|
+          {
+            "dir_name": stored_password,
+            "website_title": decode_encrypted_utf8_string(stored_password),
+            "username": retrieve_password_info(stored_password, "username")
+          }
+        end
+      end
+
+      private
+
+      def rbnacl_box(key)
+        RbNaCl::SimpleBox.from_secret_key(key)
+      end
+
+      def rbnacl_random_bytes
+        RbNaCl::Random.random_bytes(RbNaCl::PasswordHash::SCrypt::SALTBYTES)
+      end
+
+      def rbnacl_scrypt_hash(password, salt)
+        RbNaCl::PasswordHash.scrypt(password, salt, OPSLIMIT, MEMLIMIT, DIGEST_SIZE)
+      end
+
+      def decode_encrypted_utf8_string(encrypted_string)
+        decoded_data = Base64.urlsafe_decode64(encrypted_string)
+        @vault.decrypt(decoded_data)
+      end
+
+      def write_master_info(master_password_salt, master_vault_key)
+        write_to_file(password_file("master_password_salt"), master_password_salt, true)
+        write_to_file(password_file("master_encrypted_vault_key"), master_vault_key, true)
       end
     end
   end

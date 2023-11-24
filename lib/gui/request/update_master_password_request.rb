@@ -3,10 +3,10 @@ module Adamantite
     module Request
       class UpdateMasterPasswordRequest
 
-        attr_accessor :new_master_pw, :new_master_pw_confirmation, :adamantite_object
+        attr_accessor :new_master_pw, :new_master_pw_confirmation, :adamantite
 
-        def initialize(adamantite_object)
-          @adamantite_object = adamantite_object
+        def initialize(adamantite)
+          @adamantite = adamantite
         end
       end
     end

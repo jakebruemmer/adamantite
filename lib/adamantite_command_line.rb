@@ -4,10 +4,10 @@ require "base64"
 require "json"
 require "io/console"
 
-require "file_utils/file_utils"
+require "file_utils/adamantite_file_utils"
 require "pw_utils/pw_utils"
 
-include Adamantite::FileUtils
+include Adamantite::AdamantiteFileUtils
 include Adamantite::PWUtils
 
 puts "Welcome to Adamantite."
