@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Adamantite
   module GUI
     module Screen
@@ -6,26 +8,27 @@ module Adamantite
 
         option :update_master_password_request
 
-        body {
-          window('Adamantite - Update Master Password', 450, 150) {
+        body do
+          window('Adamantite - Update Master Password', 450, 150) do
             margined true
-            vertical_box {
-              form {
-                password_entry {
+            vertical_box do
+              form do
+                password_entry do
                   label 'New Master Password'
                   text <=> [update_master_password_request, :new_master_pw]
-                }
-                password_entry {
+                end
+                password_entry do
                   label 'New Master Password Confirmation'
                   text <=> [update_master_password_request, :new_master_pw_confirmation]
-                }
-              }
-              button('Update') {
+                end
+              end
+              button('Update') do
                 on_clicked do
                   new_master_pw = update_master_password_request.new_master_pw
                   new_master_pw_confirmation = update_master_password_request.new_master_pw_confirmation
-                  success = update_master_password_request.adamantite.update_master_password!(new_master_pw, new_master_pw_confirmation)
-                  if success
+                  pass = update_master_password_request.adamantite.update_master_password!(new_master_pw,
+                                                                                           new_master_pw_confirmation)
+                  if pass
                     body_root.destroy
                     ::LibUI.quit
                   else
@@ -33,10 +36,10 @@ module Adamantite
                     update_master_password_request.new_master_pw_confirmation = ''
                   end
                 end
-              }
-            }
-          }
-        }
+              end
+            end
+          end
+        end
       end
     end
   end
