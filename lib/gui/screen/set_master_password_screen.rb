@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Adamantite
   module GUI
     module Screen
@@ -6,21 +8,21 @@ module Adamantite
 
         option :set_master_password_request
 
-        body {
-          window('Adamantite - Create Master Password', 450, 150) {
+        body do
+          window('Adamantite - Create Master Password', 450, 150) do
             margined true
-            vertical_box {
-              form {
-                password_entry {
+            vertical_box do
+              form do
+                password_entry do
                   label 'Master Password'
                   text <=> [set_master_password_request, :new_master_pw]
-                }
-                password_entry {
+                end
+                password_entry do
                   label 'Master Password Confirmation'
                   text <=> [set_master_password_request, :new_master_pw_confirmation]
-                }
-              }
-              button('Set Master Password') {
+                end
+              end
+              button('Set Master Password') do
                 on_clicked do
                   set_master_password_request.set_master_password!
                   if set_master_password_request.success
@@ -31,10 +33,10 @@ module Adamantite
                     set_master_password_request.new_master_pw_confirmation = ''
                   end
                 end
-              }
-            }
-          }
-        }
+              end
+            end
+          end
+        end
       end
     end
   end
