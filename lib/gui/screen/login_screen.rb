@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 
 module PWManager
   module GUI
@@ -7,19 +8,19 @@ module PWManager
 
         option :login_request
 
-        body {
-          window('Adamantite - Login', 400, 100) {
+        body do
+          window('Adamantite - Login', 400, 100) do
             margined true
 
-            vertical_box {
-              form {
-                password_entry {
+            vertical_box do
+              form do
+                password_entry do
                   label 'Master Password'
                   text <=> [login_request, :master_password]
-                }
-              }
+                end
+              end
 
-              button('Login') {
+              button('Login') do
                 on_clicked do
                   login_request.authenticate!
                   # Destroy window if password is correct.
@@ -28,10 +29,10 @@ module PWManager
                     ::LibUI.quit
                   end
                 end
-              }
-            }
-          }
-        }
+              end
+            end
+          end
+        end
       end
     end
   end
