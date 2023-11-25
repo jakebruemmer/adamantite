@@ -1,19 +1,23 @@
 # frozen_string_literal: true
 
-require 'file_utils/adamantite_file_utils'
-require 'rbnacl'
 require 'base64'
+require 'httparty'
+require 'rbnacl'
+
+require 'file_utils/adamantite_file_utils'
 
 module Adamantite
   module Base
     class Adamantite
       include AdamantiteFileUtils
 
-      attr_reader :authenticated, :master_password, :master_password_salt, :stored_passwords
+      attr_reader :authenticated, :master_password, :master_password_salt, :stored_passwords,
+                  :master_license_key
 
       OPSLIMIT = 2**20
       MEMLIMIT = 2**24
       DIGEST_SIZE = 32
+      LICENSE_ACTIVATION_URL = 'https://api.keygen.sh/v1/accounts/c8f50eb9-eb87-4431-a680-d8f181441ef8/licenses/actions/validate-key'
 
       def initialize(master_password)
         @master_password = master_password
@@ -33,6 +37,7 @@ module Adamantite
             @master_password_salt = master_password_salt
             @vault = rbnacl_box(@master_vault_key)
             update_stored_passwords!
+            read_license_key! if has_license_key?
             true
           rescue RbNaCl::CryptoError
             false
@@ -40,6 +45,31 @@ module Adamantite
         else
           false
         end
+      end
+
+      def activate_license!(master_license_key)
+        return unless authenticated?
+
+        headers = {
+          'Content-Type': 'application/vnd.api+json',
+          'Accept': 'application/vnd.api+json'
+        }
+        body = {
+          'meta': {
+            'key': master_license_key,
+            'scope': {
+              'product': 'bb6542ab-7d74-44d0-b4f5-1fbc39cdeb99'
+            }
+          }
+        }
+        res = HTTParty.post(LICENSE_ACTIVATION_URL, headers: headers, body: body.to_json)
+
+        if res['meta']['valid']
+          @master_license_key = master_license_key
+          write_to_file(password_file('master_license_key'), @vault.encrypt(@master_license_key), true)
+          true
+        end
+        licensed?
       end
 
       def save_password(website_title, username, password, password_confirmation)
@@ -130,6 +160,10 @@ module Adamantite
         end
       end
 
+      def licensed?
+        !@master_license_key.nil?
+      end
+
       private
 
       def rbnacl_box(key)
@@ -152,6 +186,12 @@ module Adamantite
       def write_master_info(master_password_salt, master_vault_key)
         write_to_file(password_file('master_password_salt'), master_password_salt, true)
         write_to_file(password_file('master_encrypted_vault_key'), master_vault_key, true)
+      end
+
+      def read_license_key!
+        return unless authenticated?
+
+        @master_license_key = @vault.decrypt(get_license_key)
       end
     end
   end

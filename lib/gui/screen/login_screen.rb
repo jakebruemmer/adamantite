@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module PWManager
+module Adamantite
   module GUI
     module Screen
       class LoginScreen
