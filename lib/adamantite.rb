@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 
 require 'glimmer-dsl-libui'
-require 'bcrypt'
-require 'openssl'
-require 'base64'
-require 'json'
-require 'io/console'
 
 require 'fileutils'
 require 'file_utils/adamantite_file_utils'
@@ -154,7 +149,7 @@ module Adamantite
           vertical_box do
             license_label = <<-TEXT
               No license detected. Please add one to start using Adamantite.
-              If you need one, visit https://github.com/jakebruemmer/adamantite-info
+              If you need one, visit https://jakebruemmer.github.io/adamantite-info/
               for more information.
             TEXT
             label(license_label)
