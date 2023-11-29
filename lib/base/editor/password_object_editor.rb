@@ -8,7 +8,6 @@ module Adamantite
     module Editor
       class PasswordObjectEditor
         include AdamantiteFileUtils
-        include PWUtils
 
         # editable_user provides the temporary user object for editing
         attr_reader :editable_password_object

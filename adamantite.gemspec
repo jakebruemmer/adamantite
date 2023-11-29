@@ -3,7 +3,7 @@
 Gem::Specification.new do |s|
   s.required_ruby_version = '>= 3.1.0'
   s.name        = 'adamantite'
-  s.version     = '0.0.10'
+  s.version     = '0.0.11'
   s.summary     = 'Yet another password manager.'
   s.description = 'A local password manager written in Ruby.'
   s.authors     = ['Jake Bruemmer']
