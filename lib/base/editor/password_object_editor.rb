@@ -2,7 +2,6 @@
 
 require 'base/password_object'
 require 'file_utils/adamantite_file_utils'
-require 'pw_utils/pw_utils'
 
 module Adamantite
   module Base
