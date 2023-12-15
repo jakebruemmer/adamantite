@@ -1,3 +1,8 @@
 *.gem
 builds/
 builds/*
+Gemfile.lock
+.ruby-version
+.ruby-gemset
+.gladiator
+.gladiator-scratchpad
