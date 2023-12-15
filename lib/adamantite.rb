@@ -59,6 +59,8 @@ module Adamantite
           msg_box('Jake Bruemmer - https://x.com/jakebruemmer')
         end
       end
+      # following is needed for Mac to enable easy quitting with CMD+Q shortcut
+      quit_menu_item
     end
 
     body do
