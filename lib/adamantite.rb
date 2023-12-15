@@ -121,6 +121,8 @@ module Adamantite
               cell_rows <=> [self, :stored_passwords]
             end
             horizontal_box do
+              stretchy false
+              
               button('Add Password') do
                 on_clicked do
                   on_save = lambda do |password_object|
@@ -144,6 +146,8 @@ module Adamantite
               end
             end
             horizontal_box do
+              stretchy false
+              
               label('This is valid Adamantite installation.')
             end
           end
