@@ -51,7 +51,7 @@ module Adamantite
     menu('About') do
       menu_item('Software Information') do
         on_clicked do
-          msg_box('For more information please visit adamantitehomepage.com')
+          msg_box('For more information please visit https://jakebruemmer.github.io/adamantite-info/')
         end
       end
       menu_item('Author') do
@@ -122,7 +122,7 @@ module Adamantite
             end
             horizontal_box do
               stretchy false
-              
+
               button('Add Password') do
                 on_clicked do
                   on_save = lambda do |password_object|
@@ -147,7 +147,7 @@ module Adamantite
             end
             horizontal_box do
               stretchy false
-              
+
               label('This is valid Adamantite installation.')
             end
           end
