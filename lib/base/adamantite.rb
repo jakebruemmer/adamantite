@@ -12,7 +12,7 @@ module Adamantite
       include AdamantiteFileUtils
 
       attr_reader :authenticated, :master_password, :master_password_salt, :stored_passwords,
-                  :master_license_key
+                  :master_license_key, :free_tier
 
       OPSLIMIT = 2**20
       MEMLIMIT = 2**24
@@ -50,22 +50,11 @@ module Adamantite
       def activate_license!(master_license_key)
         return unless authenticated?
 
-        headers = {
-          'Content-Type': 'application/vnd.api+json',
-          'Accept': 'application/vnd.api+json'
-        }
-        body = {
-          'meta': {
-            'key': master_license_key,
-            'scope': {
-              'product': 'bb6542ab-7d74-44d0-b4f5-1fbc39cdeb99'
-            }
-          }
-        }
-        res = HTTParty.post(LICENSE_ACTIVATION_URL, headers: headers, body: body.to_json)
+        res = get_license_info(master_license_key)
 
         if res['meta']['valid']
           @master_license_key = master_license_key
+          @free_tier = res['data']['attributes']['name'] == 'Adamantite Free'
           write_to_file(password_file('master_license_key'), @vault.encrypt(@master_license_key), true)
           true
         end
@@ -192,6 +181,24 @@ module Adamantite
         return unless authenticated?
 
         @master_license_key = @vault.decrypt(get_license_key)
+        res = get_license_info(@master_license_key)
+        @free_tier = res['data']['attributes']['name'] == 'Adamantite Free'
+      end
+
+      def get_license_info(license_key)
+        headers = {
+          'Content-Type': 'application/vnd.api+json',
+          'Accept': 'application/vnd.api+json'
+        }
+        body = {
+          'meta': {
+            'key': license_key,
+            'scope': {
+              'product': 'bb6542ab-7d74-44d0-b4f5-1fbc39cdeb99'
+            }
+          }
+        }
+        HTTParty.post(LICENSE_ACTIVATION_URL, headers: headers, body: body.to_json)
       end
     end
   end

@@ -147,8 +147,11 @@ module Adamantite
             end
             horizontal_box do
               stretchy false
-
-              label('This is valid Adamantite installation.')
+              free_or_paid = @adamantite.free_tier ? 'free' : 'paid'
+              label_text = <<-TEXT
+                This is valid Adamantite installation on a #{free_or_paid} license.
+              TEXT
+              label(label_text)
             end
           end
         else
