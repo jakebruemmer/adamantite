@@ -51,7 +51,7 @@ module Adamantite
     menu('About') do
       menu_item('Software Information') do
         on_clicked do
-          msg_box('For more information please visit https://jakebruemmer.github.io/adamantite-info/')
+          msg_box('For more information please visit https://jakebruemmer.github.io/adamantite/')
         end
       end
       menu_item('Author') do
@@ -155,7 +155,7 @@ module Adamantite
           vertical_box do
             license_label = <<-TEXT
               No license detected. Please add one to start using Adamantite.
-              If you need one, visit https://jakebruemmer.github.io/adamantite-info/
+              If you need one, visit https://jakebruemmer.github.io/adamantite/
               for more information.
             TEXT
             label(license_label)
