@@ -193,7 +193,20 @@ module Adamantite
         return unless authenticated?
 
         @master_license_key = @vault.decrypt(get_license_key)
-        @free_tier = @master_license_key == '2B1684-DDC9A4-DDDA73-57C45F-910645-V3'
+        headers = {
+          'Content-Type': 'application/vnd.api+json',
+          'Accept': 'application/vnd.api+json'
+        }
+        body = {
+          'meta': {
+            'key': @master_license_key,
+            'scope': {
+              'product': 'bb6542ab-7d74-44d0-b4f5-1fbc39cdeb99'
+            }
+          }
+        }
+        res = HTTParty.post(LICENSE_ACTIVATION_URL, headers: headers, body: body.to_json)
+        @free_tier = res['data']['attributes']['name'] == 'Adamantite Free'
       end
     end
   end
