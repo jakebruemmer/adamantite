@@ -12,7 +12,7 @@ module Adamantite
       include AdamantiteFileUtils
 
       attr_reader :authenticated, :master_password, :master_password_salt, :stored_passwords,
-                  :master_license_key
+                  :master_license_key, :free_tier
 
       OPSLIMIT = 2**20
       MEMLIMIT = 2**24
@@ -66,6 +66,7 @@ module Adamantite
 
         if res['meta']['valid']
           @master_license_key = master_license_key
+          @free_tier = res['data']['attributes']['name'] == 'Adamantite Free'
           write_to_file(password_file('master_license_key'), @vault.encrypt(@master_license_key), true)
           true
         end
@@ -192,6 +193,7 @@ module Adamantite
         return unless authenticated?
 
         @master_license_key = @vault.decrypt(get_license_key)
+        @free_tier = @master_license_key == '2B1684-DDC9A4-DDDA73-57C45F-910645-V3'
       end
     end
   end
