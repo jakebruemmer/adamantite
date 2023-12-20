@@ -186,7 +186,7 @@ module Adamantite
       end
 
       def get_license_info(license_key)
-        license_key = license_key.nil? @master_license_key : license_key
+        license_key = license_key.nil? ? @master_license_key : license_key
         headers = {
           'Content-Type': 'application/vnd.api+json',
           'Accept': 'application/vnd.api+json'
