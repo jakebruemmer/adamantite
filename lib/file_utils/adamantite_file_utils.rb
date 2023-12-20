@@ -96,6 +96,10 @@ module Adamantite
 			File.open(pw_file('master_license_key'), 'rb', &:read)
 		end
 
+    def get_license_tier
+      File.open(pw_file('master_license_tier'), 'rb', &:read)
+    end
+
     def get_stored_pws
       excluded_filenames = [
         '.', '..', 'master_password_hash', 'master_password_salt', 'master_encrypted_vault_key',

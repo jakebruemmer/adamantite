@@ -12,7 +12,7 @@ module Adamantite
       include AdamantiteFileUtils
 
       attr_reader :authenticated, :master_password, :master_password_salt, :stored_passwords,
-                  :master_license_key, :free_tier
+                  :master_license_key, :free_tier, :vault
 
       OPSLIMIT = 2**20
       MEMLIMIT = 2**24
@@ -54,8 +54,9 @@ module Adamantite
 
         if res['meta']['valid']
           @master_license_key = master_license_key
-          @free_tier = free_tier?
+          @master_license_tier = license_tier(res)
           write_to_file(password_file('master_license_key'), @vault.encrypt(@master_license_key), true)
+          write_to_file(password_file('master_license_paid'), @vault.encrypt(@master_license_tier), true)
           true
         end
         licensed?
@@ -181,8 +182,7 @@ module Adamantite
         return unless authenticated?
 
         @master_license_key = @vault.decrypt(get_license_key)
-        res = get_license_info(@master_license_key)
-        @free_tier = free_tier?
+        @master_license_tier = @vault.decrypt(get_license_tier)
       end
 
       def get_license_info(license_key)
@@ -202,9 +202,9 @@ module Adamantite
         HTTParty.post(LICENSE_ACTIVATION_URL, headers: headers, body: body.to_json)
       end
 
-      def free_tier?
-        res = get_license_info
-        res['data']['attributes']['name'] == 'Adamantite Free'
+      def license_tier(keygen_response)
+        free_tier = keygen_response['data']['attributes']['name'] == 'Adamantite Free'
+        free_tier ? 'free' : 'paid'
       end
     end
   end
