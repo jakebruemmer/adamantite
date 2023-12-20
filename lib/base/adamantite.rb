@@ -54,7 +54,7 @@ module Adamantite
 
         if res['meta']['valid']
           @master_license_key = master_license_key
-          @free_tier = res['data']['attributes']['name'] == 'Adamantite Free'
+          @free_tier = free_tier?
           write_to_file(password_file('master_license_key'), @vault.encrypt(@master_license_key), true)
           true
         end
@@ -182,10 +182,11 @@ module Adamantite
 
         @master_license_key = @vault.decrypt(get_license_key)
         res = get_license_info(@master_license_key)
-        @free_tier = res['data']['attributes']['name'] == 'Adamantite Free'
+        @free_tier = free_tier?
       end
 
       def get_license_info(license_key)
+        license_key = license_key.nil? @master_license_key : license_key
         headers = {
           'Content-Type': 'application/vnd.api+json',
           'Accept': 'application/vnd.api+json'
@@ -199,6 +200,11 @@ module Adamantite
           }
         }
         HTTParty.post(LICENSE_ACTIVATION_URL, headers: headers, body: body.to_json)
+      end
+
+      def free_tier?
+        res = get_license_info
+        res['data']['attributes']['name'] == 'Adamantite Free'
       end
     end
   end
