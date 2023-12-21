@@ -12,7 +12,7 @@ module Adamantite
       include AdamantiteFileUtils
 
       attr_reader :authenticated, :master_password, :master_password_salt, :stored_passwords,
-                  :master_license_key, :free_tier
+                  :master_license_key, :free_tier, :vault
 
       OPSLIMIT = 2**20
       MEMLIMIT = 2**24
@@ -37,7 +37,7 @@ module Adamantite
             @master_password_salt = master_password_salt
             @vault = rbnacl_box(@master_vault_key)
             update_stored_passwords!
-            read_license_key! if has_license_key?
+            read_license_key!
             true
           rescue RbNaCl::CryptoError
             false
@@ -54,8 +54,9 @@ module Adamantite
 
         if res['meta']['valid']
           @master_license_key = master_license_key
-          @free_tier = res['data']['attributes']['name'] == 'Adamantite Free'
-          write_to_file(password_file('master_license_key'), @vault.encrypt(@master_license_key), true)
+          write_master_license_key
+          @master_license_tier = license_tier(res)
+          write_master_license_tier
           true
         end
         licensed?
@@ -127,6 +128,8 @@ module Adamantite
           end
           FileUtils.remove_entry_secure(pwmanager_tmp_dir)
           write_master_info(new_master_password_salt, encrypted_vault_key)
+          write_master_license_key
+          write_master_license_tier
           @master_password_salt = master_password_salt
           @master_encrypted_vault_key = encrypted_vault_key
           true
@@ -177,15 +180,23 @@ module Adamantite
         write_to_file(password_file('master_encrypted_vault_key'), master_vault_key, true)
       end
 
+      def write_master_license_key
+        write_to_file(password_file('master_license_key'), @vault.encrypt(@master_license_key), true)
+      end
+
+      def write_master_license_tier
+        write_to_file(password_file('master_license_tier'), @vault.encrypt(@master_license_tier), true)
+      end
+
       def read_license_key!
-        return unless authenticated?
+        return unless authenticated? && has_license_key?
 
         @master_license_key = @vault.decrypt(get_license_key)
-        res = get_license_info(@master_license_key)
-        @free_tier = res['data']['attributes']['name'] == 'Adamantite Free'
+        @master_license_tier = @vault.decrypt(get_license_tier)
       end
 
       def get_license_info(license_key)
+        license_key = license_key.nil? ? @master_license_key : license_key
         headers = {
           'Content-Type': 'application/vnd.api+json',
           'Accept': 'application/vnd.api+json'
@@ -199,6 +210,11 @@ module Adamantite
           }
         }
         HTTParty.post(LICENSE_ACTIVATION_URL, headers: headers, body: body.to_json)
+      end
+
+      def license_tier(keygen_response)
+        free_tier = keygen_response['data']['attributes']['name'] == 'Adamantite Free'
+        free_tier ? 'free' : 'paid'
       end
     end
   end
