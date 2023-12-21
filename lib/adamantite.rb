@@ -8,6 +8,7 @@ require 'base/adamantite'
 require 'base/password_object'
 require 'gui/screen/copy_screen'
 require 'gui/screen/login_screen'
+require 'gui/screen/preferences_screen'
 require 'gui/screen/set_master_password_screen'
 require 'gui/screen/show_screen'
 require 'gui/screen/update_master_password_screen'
@@ -57,6 +58,11 @@ module Adamantite
       menu_item('Author') do
         on_clicked do
           msg_box('Jake Bruemmer - https://x.com/jakebruemmer')
+        end
+      end
+      menu_item('Preferences') do
+        on_clicked do
+          preferences_screen.show
         end
       end
       # following is needed for Mac to enable easy quitting with CMD+Q shortcut
