@@ -113,7 +113,7 @@ module Adamantite
     end
 
 		def has_license_key?
-			pw_file_exists?('master_license_key')
+			pw_file_exists?('master_license_key') && pw_file_exists?('master_license_tier')
 		end
   end
 end
