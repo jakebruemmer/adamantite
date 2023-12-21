@@ -12,7 +12,7 @@ module Adamantite
       include AdamantiteFileUtils
 
       attr_reader :authenticated, :master_password, :master_password_salt, :stored_passwords,
-                  :master_license_key, :free_tier, :vault
+                  :master_license_key, :master_license_tier, :vault
 
       OPSLIMIT = 2**20
       MEMLIMIT = 2**24
