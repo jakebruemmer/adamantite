@@ -12,7 +12,6 @@ module Adamantite
             label('Hi')
           end
         end
-
       end
     end
   end

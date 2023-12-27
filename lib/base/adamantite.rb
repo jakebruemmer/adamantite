@@ -3,6 +3,7 @@
 require 'base64'
 require 'httparty'
 require 'rbnacl'
+require 'yaml'
 
 require 'file_utils/adamantite_file_utils'
 
@@ -12,7 +13,7 @@ module Adamantite
       include AdamantiteFileUtils
 
       attr_reader :authenticated, :master_password, :master_password_salt, :stored_passwords,
-                  :master_license_key, :master_license_tier, :vault
+                  :master_license_key, :master_license_tier, :vault, :settings
 
       OPSLIMIT = 2**20
       MEMLIMIT = 2**24
@@ -22,6 +23,7 @@ module Adamantite
       def initialize(master_password)
         @master_password = master_password
         @authenticated = false
+        @settings = YAML.load_file(File.expand_path(File.join(__dir__, '../..', 'settings/settings.yml')))
       end
 
       def authenticate!
