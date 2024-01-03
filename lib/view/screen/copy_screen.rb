@@ -1,18 +1,17 @@
 # frozen_string_literal: true
 
 module Adamantite
-  module GUI
+  module View
     module Screen
-      class ShowScreen
+      class CopyScreen
         include Glimmer::LibUI::CustomWindow
 
-        option :password
+        option :password_title
 
         body do
-          window('Adamantite - Show Password', 400, 100) do
+          window('Adamantite - Copy Password', 400, 100) do
             margined true
-
-            label(password.to_s)
+            label("Copied password for #{password_title} to your clipboard.")
           end
         end
       end

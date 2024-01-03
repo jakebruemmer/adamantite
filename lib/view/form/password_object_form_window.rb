@@ -3,7 +3,7 @@
 require 'model/editor/password_object_editor'
 
 module Adamantite
-  module GUI
+  module View
     module Form
       class PasswordObjectFormWindow
         include Glimmer::LibUI::CustomWindow

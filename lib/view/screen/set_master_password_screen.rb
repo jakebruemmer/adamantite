@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Adamantite
-  module GUI
+  module View
     module Screen
       class SetMasterPasswordScreen
         include Glimmer::LibUI::CustomWindow
