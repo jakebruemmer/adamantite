@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'model/presenter/password_presenter'
+
 module Adamantite
   module Model
     module Presenter
@@ -9,29 +11,22 @@ module Adamantite
         
         def initialize(adamantite)
           @adamantite = adamantite
-          # TODO consider storing passwords as hashes instead of arrays to improve code readability
           @stored_passwords = @adamantite.stored_passwords.map do |stored_password|
-            [stored_password[:website_title], stored_password[:username], 'Edit', 'Copy', 'Show', 'Delete']
+            PasswordPresenter.new(stored_password[:website_title], stored_password[:username])
           end
         end
         
         def password_object_for_edit(row)
-          website_title = @stored_passwords[row][0]
-          username = @stored_passwords[row][1]
+          website_title = @stored_passwords[row].title
+          username = @stored_passwords[row].username
           dir_name = @adamantite.stored_passwords[row][:dir_name]
           password = @adamantite.retrieve_password_info(dir_name, 'password')
           Model::PasswordObject.new(website_title, username, password, password, row, dir_name)
         end
         
         def save_password(password_object)
-          stored_password = []
-          stored_password << password_object.website_title
-          stored_password << password_object.username
-          stored_password << 'Edit'
-          stored_password << 'Copy'
-          stored_password << 'Show'
-          stored_password << 'Delete'
-          @stored_passwords[password_object.row_index] = stored_password
+          updated_stored_password = PasswordPresenter.new(password_object.website_title, password_object.username)
+          @stored_passwords[password_object.row_index] = updated_stored_password
           adamantite_stored_password = {
             'dir_name': password_object.dir_name,
             'website_title': password_object.website_title,
@@ -53,15 +48,10 @@ module Adamantite
         end
         
         def add_password(password_object)
-          stored_password = []
-          stored_password << password_object.website_title
-          stored_password << password_object.username
-          stored_password << 'Edit'
-          stored_password << 'Copy'
-          stored_password << 'Show'
-          stored_password << 'Delete'
-          @stored_passwords << stored_password
+          new_stored_password = PasswordPresenter.new(password_object.website_title, password_object.username)
+          @stored_passwords << new_stored_password
         end
+        
       end
     end
   end

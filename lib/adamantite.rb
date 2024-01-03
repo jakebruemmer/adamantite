@@ -41,7 +41,6 @@ module Adamantite
 
       @adamantite = login_request.adamantite
       @adamantite_presenter = Model::Presenter::AdamantitePresenter.new(@adamantite)
-      # TODO add_password_request does not seem used anywhere... could we delete it?
       @add_password_request = Model::Request::AddPasswordRequest.new(
         @adamantite.master_password,
         @adamantite.master_password_salt
@@ -83,7 +82,7 @@ module Adamantite
               button_column('Copy') do
                 on_clicked do |row|
                   @adamantite_presenter.copy_password(row)
-                  copy_screen(password_title: @adamantite_presenter.stored_passwords[row].first).show
+                  copy_screen(password_title: @adamantite_presenter.stored_passwords[row].title).show
                 end
               end
               button_column('Show') do
