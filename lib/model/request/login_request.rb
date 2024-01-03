@@ -3,7 +3,7 @@
 require 'base/adamantite'
 
 module Adamantite
-  module GUI
+  module Model
     module Request
       class LoginRequest
 

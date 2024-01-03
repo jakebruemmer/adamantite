@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Adamantite
-  module GUI
+  module Model
     module Request
       class SetMasterLicenseKeyRequest
         attr_accessor :adamantite, :master_license_key, :master_license_key_activated

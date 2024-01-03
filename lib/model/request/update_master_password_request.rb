@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Adamantite
-  module GUI
+  module Model
     module Request
       class UpdateMasterPasswordRequest
         attr_accessor :new_master_pw, :new_master_pw_confirmation, :adamantite

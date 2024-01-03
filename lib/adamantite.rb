@@ -6,16 +6,16 @@ require 'fileutils'
 require 'file_utils/adamantite_file_utils'
 require 'base/adamantite'
 require 'base/password_object'
+require 'model/request/login_request'
+require 'model/request/add_password_request'
+require 'model/request/update_master_password_request'
+require 'model/request/set_master_license_key_request'
+require 'model/request/set_master_password_request'
 require 'gui/screen/copy_screen'
 require 'gui/screen/login_screen'
 require 'gui/screen/set_master_password_screen'
 require 'gui/screen/show_screen'
 require 'gui/screen/update_master_password_screen'
-require 'gui/request/login_request'
-require 'gui/request/add_password_request'
-require 'gui/request/update_master_password_request'
-require 'gui/request/set_master_license_key_request'
-require 'gui/request/set_master_password_request'
 require 'gui/form/license_form'
 require 'gui/form/password_object_form_window'
 
@@ -28,11 +28,11 @@ module Adamantite
 
     before_body do
       unless master_password_exists?
-        set_master_password_request = GUI::Request::SetMasterPasswordRequest.new
+        set_master_password_request = Model::Request::SetMasterPasswordRequest.new
         set_master_password_screen(set_master_password_request: set_master_password_request).show
       end
 
-      login_request = GUI::Request::LoginRequest.new
+      login_request = Model::Request::LoginRequest.new
       login_screen(login_request: login_request).show
 
       unless login_request.authenticated
@@ -45,7 +45,7 @@ module Adamantite
       end
       @master_password = @adamantite.master_password
       @master_password_salt = @adamantite.master_password_salt
-      @add_password_request = GUI::Request::AddPasswordRequest.new(@master_password, @master_password_salt)
+      @add_password_request = Model::Request::AddPasswordRequest.new(@master_password, @master_password_salt)
     end
 
     menu('About') do
@@ -140,7 +140,7 @@ module Adamantite
               end
               button('Update Master Password') do
                 on_clicked do
-                  update_master_password_request = GUI::Request::UpdateMasterPasswordRequest.new(@adamantite)
+                  update_master_password_request = Model::Request::UpdateMasterPasswordRequest.new(@adamantite)
                   update_master_password_screen(update_master_password_request: update_master_password_request).show
                 end
               end
@@ -163,7 +163,7 @@ module Adamantite
             label(license_label)
             button('Add License Info') do
               on_clicked do
-                set_master_license_key_request = GUI::Request::SetMasterLicenseKeyRequest.new(@adamantite)
+                set_master_license_key_request = Model::Request::SetMasterLicenseKeyRequest.new(@adamantite)
                 license_form(set_master_license_key_request: set_master_license_key_request).show
               end
             end

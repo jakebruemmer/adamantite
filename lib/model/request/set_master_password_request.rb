@@ -3,7 +3,7 @@
 require 'base/adamantite'
 
 module Adamantite
-  module GUI
+  module Model
     module Request
       class SetMasterPasswordRequest
         attr_accessor :new_master_pw, :new_master_pw_confirmation, :success
