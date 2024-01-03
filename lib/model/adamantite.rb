@@ -7,7 +7,7 @@ require 'rbnacl'
 require 'file_utils/adamantite_file_utils'
 
 module Adamantite
-  module Base
+  module Model
     class Adamantite
       include AdamantiteFileUtils
 

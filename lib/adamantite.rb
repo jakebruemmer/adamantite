@@ -4,8 +4,9 @@ require 'glimmer-dsl-libui'
 
 require 'fileutils'
 require 'file_utils/adamantite_file_utils'
-require 'base/adamantite'
-require 'base/password_object'
+require 'model/adamantite'
+require 'model/password_object'
+require 'model/presenter/adamantite_presenter'
 require 'model/request/login_request'
 require 'model/request/add_password_request'
 require 'model/request/update_master_password_request'
@@ -24,7 +25,7 @@ module Adamantite
     include Glimmer::LibUI::Application
     include Adamantite::AdamantiteFileUtils
 
-    attr_accessor :add_password_request, :stored_passwords
+    attr_accessor :add_password_request, :password_presenter
 
     before_body do
       unless master_password_exists?
@@ -40,12 +41,12 @@ module Adamantite
       end
 
       @adamantite = login_request.adamantite
-      @stored_passwords = @adamantite.stored_passwords.map do |stored_password|
-        [stored_password[:website_title], stored_password[:username], 'Edit', 'Copy', 'Show', 'Delete']
-      end
-      @master_password = @adamantite.master_password
-      @master_password_salt = @adamantite.master_password_salt
-      @add_password_request = Model::Request::AddPasswordRequest.new(@master_password, @master_password_salt)
+      @adamantite_presenter = Model::Presenter::AdamantitePresenter.new(@adamantite)
+      # TODO add_password_request does not seem used anywhere... could we delete it?
+      @add_password_request = Model::Request::AddPasswordRequest.new(
+        @adamantite.master_password,
+        @adamantite.master_password_salt
+      )
     end
 
     menu('About') do
@@ -74,36 +75,16 @@ module Adamantite
               button_column('Edit') do
                 on_clicked do |row|
                   on_save = lambda do |password_object|
-                    stored_password = []
-                    stored_password << password_object.website_title
-                    stored_password << password_object.username
-                    stored_password << 'Edit'
-                    stored_password << 'Copy'
-                    stored_password << 'Show'
-                    stored_password << 'Delete'
-                    @stored_passwords[password_object.row_index] = stored_password
-                    adamantite_stored_password = {
-                      'dir_name': password_object.dir_name,
-                      'website_title': password_object.website_title,
-                      'username': @adamantite.retrieve_password_info(password_object.dir_name, 'username')
-                    }
-                    @adamantite.stored_passwords[password_object.row_index] = adamantite_stored_password
+                    @adamantite_presenter.save_password(password_object)
                   end
-                  website_title = @stored_passwords[row][0]
-                  username = @stored_passwords[row][1]
-                  dir_name = @adamantite.stored_passwords[row][:dir_name]
-                  password = @adamantite.retrieve_password_info(dir_name, 'password')
-                  password_object = Base::PasswordObject.new(website_title, username, password, password, row, dir_name)
+                  password_object = @adamantite_presenter.password_object_for_edit(row)
                   password_object_form_window(adamantite: @adamantite, on_save: on_save, password_object: password_object).show
                 end
               end
               button_column('Copy') do
                 on_clicked do |row|
-                  IO.popen('pbcopy', 'w') do |f|
-                    dir_name = @adamantite.stored_passwords[row][:dir_name]
-                    f << @adamantite.retrieve_password_info(dir_name, 'password')
-                  end
-                  copy_screen(password_title: @stored_passwords[row].first).show
+                  @adamantite_presenter.copy_password(row)
+                  copy_screen(password_title: @adamantite_presenter.stored_passwords[row].first).show
                 end
               end
               button_column('Show') do
@@ -114,11 +95,10 @@ module Adamantite
               end
               button_column('Delete') do
                 on_clicked do |row|
-                  @adamantite.delete_password(@adamantite.stored_passwords[row][:dir_name])
-                  @stored_passwords.delete_at(row)
+                  @adamantite_presenter.delete_password(row)
                 end
               end
-              cell_rows <=> [self, :stored_passwords]
+              cell_rows <=> [@adamantite_presenter, :stored_passwords]
             end
             horizontal_box do
               stretchy false
@@ -126,14 +106,7 @@ module Adamantite
               button('Add Password') do
                 on_clicked do
                   on_save = lambda do |password_object|
-                    stored_password = []
-                    stored_password << password_object.website_title
-                    stored_password << password_object.username
-                    stored_password << 'Edit'
-                    stored_password << 'Copy'
-                    stored_password << 'Show'
-                    stored_password << 'Delete'
-                    @stored_passwords << stored_password
+                    @adamantite_presenter.add_password(password_object)
                   end
                   password_object_form_window(adamantite: @adamantite, on_save: on_save).show
                 end

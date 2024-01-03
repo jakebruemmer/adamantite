@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require 'base/password_object'
+require 'model/password_object'
 require 'file_utils/adamantite_file_utils'
 
 module Adamantite
-  module Base
+  module Model
     module Editor
       class PasswordObjectEditor
         include AdamantiteFileUtils

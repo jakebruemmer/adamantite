@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'base/editor/password_object_editor'
+require 'model/editor/password_object_editor'
 
 module Adamantite
   module GUI
@@ -15,7 +15,7 @@ module Adamantite
         option :adamantite
 
         before_body do
-          @password_object_editor = Base::Editor::PasswordObjectEditor.new(adamantite, password_object)
+          @password_object_editor = Model::Editor::PasswordObjectEditor.new(adamantite, password_object)
         end
 
         body do

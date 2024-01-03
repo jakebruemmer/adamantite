@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'base/adamantite'
+require 'model/adamantite'
 
 module Adamantite
   module Model
@@ -10,7 +10,7 @@ module Adamantite
         attr_accessor :adamantite, :master_password, :authenticated
 
         def authenticate!
-          @adamantite = Base::Adamantite.new(master_password)
+          @adamantite = Model::Adamantite.new(master_password)
           @adamantite.authenticate!
           @authenticated = @adamantite.authenticated?
         end
