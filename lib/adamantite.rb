@@ -2,8 +2,7 @@
 
 require 'glimmer-dsl-libui'
 
-require 'fileutils'
-require 'file_utils/adamantite_file_utils'
+require 'model/utils/adamantite_file_utils'
 require 'model/adamantite'
 require 'model/password_object'
 require 'model/presenter/adamantite_presenter'
@@ -23,7 +22,7 @@ require 'view/form/password_object_form_window'
 module Adamantite
   class AdamantiteApp
     include Glimmer::LibUI::Application
-    include Adamantite::AdamantiteFileUtils
+    include Model::Utils::AdamantiteFileUtils
 
     attr_accessor :add_password_request, :password_presenter
 

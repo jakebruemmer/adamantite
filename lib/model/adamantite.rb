@@ -3,13 +3,14 @@
 require 'base64'
 require 'httparty'
 require 'rbnacl'
+require 'fileutils'
 
-require 'file_utils/adamantite_file_utils'
+require 'model/utils/adamantite_file_utils'
 
 module Adamantite
   module Model
     class Adamantite
-      include AdamantiteFileUtils
+      include Utils::AdamantiteFileUtils
 
       attr_reader :authenticated, :master_password, :master_password_salt, :stored_passwords,
                   :master_license_key, :master_license_tier, :vault

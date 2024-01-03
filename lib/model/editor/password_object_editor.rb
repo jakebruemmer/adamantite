@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 require 'model/password_object'
-require 'file_utils/adamantite_file_utils'
+require 'model/utils/adamantite_file_utils'
 
 module Adamantite
   module Model
     module Editor
       class PasswordObjectEditor
-        include AdamantiteFileUtils
+        include Utils::AdamantiteFileUtils
 
         # editable_user provides the temporary user object for editing
         attr_reader :editable_password_object
