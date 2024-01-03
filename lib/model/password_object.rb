@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Adamantite
-  module Base
+  module Model
     class PasswordObject
       attr_accessor :website_title, :username, :password, :password_confirmation,
                     :row_index, :dir_name, :initial_dir_name

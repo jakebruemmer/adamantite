@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Adamantite
-  module GUI
+  module Model
     module Request
       class AddPasswordRequest
         attr_accessor :website_title, :username, :password, :password_confirmation, :password_saved
