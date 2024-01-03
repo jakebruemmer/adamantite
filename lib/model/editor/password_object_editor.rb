@@ -11,6 +11,7 @@ module Adamantite
 
         # editable_user provides the temporary user object for editing
         attr_reader :editable_password_object
+        attr_accessor :error_message
 
         # initializes a user editor with nil when creating a new user
         # or with an existing user when editing an existing user
@@ -30,7 +31,10 @@ module Adamantite
 
         # saves editable user data and returns final user to add to DB/File/Array/etc...
         def save
-          return false unless @password_object.password == @password_object.password_confirmation
+          unless @editable_password_object.password == @editable_password_object.password_confirmation
+            self.error_message = 'Password & Confirmation must match!'
+            return false
+          end
 
           @password_object.website_title = @editable_password_object.website_title
           @password_object.username = @editable_password_object.username

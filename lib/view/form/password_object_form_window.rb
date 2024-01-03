@@ -23,6 +23,10 @@ module Adamantite
             margined true
 
             vertical_box do
+              @error_message_container = horizontal_box do
+                stretchy false
+              end
+              
               form do
                 entry do
                   label 'Website Title'
@@ -42,15 +46,25 @@ module Adamantite
                   text <=> [@password_object_editor.editable_password_object, :password_confirmation]
                 end
               end
-
+              
               horizontal_box do
                 stretchy false
 
                 button('Save') do
                   on_clicked do
                     self.password_object = @password_object_editor.save
-                    on_save.call(password_object)
-                    password_object_form_editor.destroy
+                    if self.password_object
+                      on_save.call(password_object)
+                      password_object_form_editor.destroy
+                    else
+                      if @error_message_label.nil?
+                        @error_message_container.content do
+                          @error_message_label = label do
+                            text <= [@password_object_editor, :error_message]
+                          end
+                        end
+                      end
+                    end
                   end
                 end
 
